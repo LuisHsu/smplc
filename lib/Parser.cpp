@@ -94,3 +94,13 @@ bool Parser::Number::parse(){
     }
     return false;
 }
+
+Parser::Designator::Designator(Source& source): Interface(source)
+{}
+bool Parser::Designator::parse(){
+    if(Ident(source).parse()){
+        // TODO: array
+        return true;
+    }
+    return false;
+}

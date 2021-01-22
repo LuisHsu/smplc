@@ -43,3 +43,6 @@ add_unittest(test_Parser_Ident
 add_unittest(test_Parser_Number
     test_Parser_Number.cpp
 )
+add_unittest(test_Parser_Designator
+    test_Parser_Designator.cpp
+)

@@ -43,6 +43,13 @@ public:
     bool parse();
 };
 
+class Designator: public Interface{
+public:
+    Designator(Source& source);
+    bool parse();
+};
+
+
 }
 
 
