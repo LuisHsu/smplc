@@ -8,15 +8,25 @@ A compiler for smpl language - for UCI Advanced compiler course project
 
 # Build
 
-TODO:
+```shell
+mkdir build
+cd build
+cmake ..
+make
+```
 
 # Run
 
-TODO:
+```shell
+smplc <input_file>
+```
 
 # Test
 
-TODO:
+```shell
+cd build
+ctest
+```
 
 # SMPL Syntax
 
