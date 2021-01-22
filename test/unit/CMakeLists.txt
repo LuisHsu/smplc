@@ -25,3 +25,6 @@ endfunction(add_unittest)
 add_unittest(test_Source
     test_Source.cpp
 )
+add_unittest(test_Parser_Letter
+    test_Parser_Letter.cpp
+)
