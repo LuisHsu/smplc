@@ -18,9 +18,7 @@ bool matchAllOf(Source& source){
             return true;
         }
     }
-    if(current != -1){
-        source.putback(current);
-    }
+    source.putback(current);
     return false;
 }
 
@@ -82,6 +80,16 @@ Parser::Ident::Ident(Source& source): Interface(source)
 bool Parser::Ident::parse(){
     if(Letter(source).parse()){
         while(Letter(source).parse() || Digit(source).parse());
+        return true;
+    }
+    return false;
+}
+
+Parser::Number::Number(Source& source): Interface(source)
+{}
+bool Parser::Number::parse(){
+    if(Digit(source).parse()){
+        while(Digit(source).parse());
         return true;
     }
     return false;

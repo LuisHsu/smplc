@@ -10,7 +10,7 @@ private:
 public:
     Source(std::istream& stream);
     int get();
-    void putback(char);
+    void putback(int);
 };
 
 #endif

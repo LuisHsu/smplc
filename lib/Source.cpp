@@ -64,9 +64,7 @@ int Source::get(){
         int current = skipComment(stream);
         if(current == ' '){
             while((current = skipComment(stream)) == ' ');
-            if(current != -1){
-                stream.putback(current);
-            }
+            stream.putback(current);
             current = ' ';
         }
         return current;
@@ -74,7 +72,9 @@ int Source::get(){
     return -1;
 }
 
-void Source::putback(char ch){
-    stream.clear();
-    stream.putback(ch);
+void Source::putback(int ch){
+    if(ch != -1){
+        stream.clear();
+        stream.putback(ch);
+    }
 }

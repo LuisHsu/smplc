@@ -37,6 +37,12 @@ public:
     bool parse();
 };
 
+class Number: public Interface{
+public:
+    Number(Source& source);
+    bool parse();
+};
+
 }
 
 

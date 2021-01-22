@@ -40,3 +40,6 @@ add_unittest(test_Parser_RelOp
 add_unittest(test_Parser_Ident
     test_Parser_Ident.cpp
 )
+add_unittest(test_Parser_Number
+    test_Parser_Number.cpp
+)
