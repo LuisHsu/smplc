@@ -80,3 +80,15 @@ TEST(unit_Source, multi_line_comment){
     Source source4(input);
     EXPECT_THROW(source4.get(), Exception);
 }
+
+TEST(unit_Source, putback){
+    std::stringstream input("test");
+    Source source(input);
+    EXPECT_EQ(source.get(), 't');
+    EXPECT_EQ(source.get(), 'e');
+    source.putback('i');
+    EXPECT_EQ(source.get(), 'i');
+    EXPECT_EQ(source.get(), 's');
+    EXPECT_EQ(source.get(), 't');
+    EXPECT_EQ(source.get(), -1);
+}

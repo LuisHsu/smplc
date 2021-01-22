@@ -70,3 +70,8 @@ int Source::get(){
     lastChar = current;
     return current;
 }
+
+void Source::putback(char ch){
+    stream.putback(ch);
+    stream.clear();
+}

@@ -34,3 +34,6 @@ add_unittest(test_Parser_Letter
 add_unittest(test_Parser_Digit
     test_Parser_Digit.cpp
 )
+add_unittest(test_Parser_RelOp
+    test_Parser_RelOp.cpp
+)

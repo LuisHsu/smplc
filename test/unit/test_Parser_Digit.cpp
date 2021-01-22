@@ -15,10 +15,14 @@ TEST(unit_Parser, Digit_0_to_9){
 }
 
 TEST(unit_Parser, Digit_unknown){
-    std::stringstream input("a^&");
+    std::stringstream input("a^2&");
     Source source(input);
     Parser::Digit digit(source);
     EXPECT_FALSE(digit.parse());
+    EXPECT_EQ(source.get(), 'a');
     EXPECT_FALSE(digit.parse());
+    EXPECT_EQ(source.get(), '^');
+    EXPECT_TRUE(digit.parse());
     EXPECT_FALSE(digit.parse());
+    EXPECT_EQ(source.get(), '&');
 }

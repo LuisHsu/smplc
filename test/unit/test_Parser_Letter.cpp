@@ -19,5 +19,7 @@ TEST(unit_Parser, Letter_unknown){
     Source source(input);
     Parser::Letter letter(source);
     EXPECT_FALSE(letter.parse());
+    EXPECT_EQ(source.get(), '@');
     EXPECT_FALSE(letter.parse());
+    EXPECT_EQ(source.get(), '$');
 }

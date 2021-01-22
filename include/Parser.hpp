@@ -25,6 +25,12 @@ public:
     bool parse();
 };
 
+class RelOp: public Interface{
+public:
+    RelOp(Source& source);
+    bool parse();
+};
+
 }
 
 
