@@ -16,3 +16,10 @@ bool Parser::Letter::parse(){
     int letter = source.get();
     return (letter >= 'a') && (letter <= 'z');
 }
+
+Parser::Digit::Digit(Source& source): Interface(source)
+{}
+bool Parser::Digit::parse(){
+    int digit = source.get();
+    return (digit >= '0') && (digit <= '9');
+}

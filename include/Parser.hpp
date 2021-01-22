@@ -19,6 +19,12 @@ public:
     bool parse();
 };
 
+class Digit: public Interface{
+public:
+    Digit(Source& source);
+    bool parse();
+};
+
 }
 
 
