@@ -37,7 +37,7 @@ int Source::get(){
                 }else if(current == '/' && previous == '*'){
                     level -= 1;
                     if(level == 0){
-                        current = stream.get();
+                        current = ' ';
                         break;
                     }
                 }
@@ -69,9 +69,4 @@ int Source::get(){
     }
     lastChar = current;
     return current;
-}
-
-Source& Source::operator>>(int& result){
-    result = get();
-    return *this;
 }

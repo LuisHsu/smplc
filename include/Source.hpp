@@ -11,7 +11,6 @@ private:
 public:
     Source(std::istream& stream);
     int get();
-    Source& operator>>(int& obj);
 };
 
 #endif

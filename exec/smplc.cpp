@@ -12,21 +12,21 @@
 #include "ColorPrint.hpp"
 
 int main(int argc, char const *argv[]){
-  // Check argument
-  if(argc < 2){
-    ColorPrint::fatal("no input files");
-  }else if(argc > 2){
-    ColorPrint::fatal("only support one input file now");
-  }
-  // Create source instance
-  std::ifstream fileIn(argv[1]);
-  Source sourceFile(fileIn);
+    // Check argument
+    if(argc < 2){
+        ColorPrint::fatal("no input files");
+    }else if(argc > 2){
+        ColorPrint::fatal("only support one input file now");
+    }
+    // Create source instance
+    std::ifstream fileIn(argv[1]);
+    Source sourceFile(fileIn);
 
-  // Parse
-  try{
-    // TODO: parse
-  }catch(Exception& err){
-    ColorPrint::fatal(err.what());
-  }
-  return 0;
+    // Parse
+    try{
+        // TODO: parse
+    }catch(Exception& err){
+        ColorPrint::fatal(err.what());
+    }
+    return 0;
 }

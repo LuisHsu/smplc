@@ -9,6 +9,6 @@ add_subdirectory(lib)
 add_subdirectory(exec)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-enable_testing()
-add_subdirectory(test/unit)
+    enable_testing()
+    add_subdirectory(test/unit)
 endif()
