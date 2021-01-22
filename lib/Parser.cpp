@@ -18,8 +18,9 @@ bool matchAllOf(Source& source){
             return true;
         }
     }
-    
-    source.putback(current);
+    if(current != -1){
+        source.putback(current);
+    }
     return false;
 }
 
@@ -74,4 +75,14 @@ bool Parser::RelOp::parse(){
         matchAllOf<'<', '='>(source) ||
         matchOne<'<'>(source) ||
         matchOne<'>'>(source);
+}
+
+Parser::Ident::Ident(Source& source): Interface(source)
+{}
+bool Parser::Ident::parse(){
+    if(Letter(source).parse()){
+        while(Letter(source).parse() || Digit(source).parse());
+        return true;
+    }
+    return false;
 }

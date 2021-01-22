@@ -7,7 +7,6 @@
 class Source{
 private:
     std::istream& stream;
-    int lastChar;
 public:
     Source(std::istream& stream);
     int get();

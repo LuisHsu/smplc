@@ -31,6 +31,12 @@ public:
     bool parse();
 };
 
+class Ident: public Interface{
+public:
+    Ident(Source& source);
+    bool parse();
+};
+
 }
 
 
