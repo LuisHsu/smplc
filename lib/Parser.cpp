@@ -106,7 +106,16 @@ Parser::Designator::Designator(Source& source): Interface(source)
 {}
 bool Parser::Designator::parse(){
     if(Ident(source).parse()){
-        // TODO: array
+        while(skipWhiteSpaces(source) && matchOne<'['>(source)){
+            if(!(
+                skipWhiteSpaces(source)
+                && Expression(source).parse()
+                && skipWhiteSpaces(source)
+                && matchOne<']'>(source)
+            )){
+                return false;
+            }
+        }
         return true;
     }
     return false;

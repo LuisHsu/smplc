@@ -9,41 +9,47 @@ TEST(unit_Parser, Designator_ident){
     Source source(input);
     Parser::Designator designator(source);
     EXPECT_TRUE(designator.parse());
+    EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Designator_array){ // TODO:
+TEST(unit_Parser, Designator_array){
     std::stringstream input("id[3]");
     Source source(input);
     Parser::Designator designator(source);
     EXPECT_TRUE(designator.parse());
+    EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Designator_2d_array){ // TODO:
+TEST(unit_Parser, Designator_2d_array){
     std::stringstream input("id[4][3]");
     Source source(input);
     Parser::Designator designator(source);
     EXPECT_TRUE(designator.parse());
+    EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Designator_missing_left_bracket){ // TODO:
+TEST(unit_Parser, Designator_missing_left_bracket){
     std::stringstream input("id3]");
     Source source(input);
     Parser::Designator designator(source);
-    EXPECT_FALSE(designator.parse());
+    EXPECT_TRUE(designator.parse());
+    EXPECT_EQ(source.get(), ']');
 }
 
-TEST(unit_Parser, DISABLED_Designator_missing_right_bracket){ // TODO:
+TEST(unit_Parser, Designator_missing_right_bracket){
     std::stringstream input("id[3");
     Source source(input);
     Parser::Designator designator(source);
     EXPECT_FALSE(designator.parse());
+    EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Designator_missing_expression){ // TODO:
+TEST(unit_Parser, Designator_missing_expression){
     std::stringstream input("id[]");
     Source source(input);
     Parser::Designator designator(source);
     EXPECT_FALSE(designator.parse());
+    EXPECT_EQ(source.get(), ']');
 }
 
 TEST(unit_Parser, Designator_invalid){
@@ -51,4 +57,5 @@ TEST(unit_Parser, Designator_invalid){
     Source source(input);
     Parser::Designator designator(source);
     EXPECT_FALSE(designator.parse());
+    EXPECT_EQ(source.get(), '2');
 }
