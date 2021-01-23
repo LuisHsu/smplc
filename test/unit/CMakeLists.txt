@@ -55,3 +55,6 @@ add_unittest(test_Parser_Term
 add_unittest(test_Parser_Expression
     test_Parser_Expression.cpp
 )
+add_unittest(test_Parser_Relation
+    test_Parser_Relation.cpp
+)

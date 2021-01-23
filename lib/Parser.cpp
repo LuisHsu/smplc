@@ -126,8 +126,8 @@ Parser::Factor::Factor(Source& source): Interface(source)
 bool Parser::Factor::parse(){
     if(
         Designator(source).parse() ||
-        Number(source).parse()
-        // TODO: Expression
+        Number(source).parse() ||
+        (matchOne<'('>(source) && Expression(source).parse() && matchOne<')'>(source))
         // TODO: FuncCall
     ){
         return true;
@@ -160,6 +160,21 @@ bool Parser::Expression::parse(){
             && skipWhiteSpaces(source)
             && Term(source).parse()
         );
+        return true;
+    }
+    return false;
+}
+
+Parser::Relation::Relation(Source& source): Interface(source)
+{}
+bool Parser::Relation::parse(){
+    if(
+        Expression(source).parse()
+        && skipWhiteSpaces(source)
+        && RelOp(source).parse()
+        && skipWhiteSpaces(source)
+        && Expression(source).parse()
+    ){
         return true;
     }
     return false;

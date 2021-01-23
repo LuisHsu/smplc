@@ -67,6 +67,12 @@ public:
     bool parse();
 };
 
+class Relation: public Interface{
+public:
+    Relation(Source& source);
+    bool parse();
+};
+
 }
 
 

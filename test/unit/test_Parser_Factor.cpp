@@ -28,7 +28,7 @@ TEST(unit_Parser, Factor_invalid){
     EXPECT_EQ(source.get(), '=');
 }
 
-TEST(unit_Parser, DISABLED_Factor_expression){
+TEST(unit_Parser, Factor_expression){
     std::stringstream input("(456)");
     Source source(input);
     Parser::Factor factor(source);
