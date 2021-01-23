@@ -125,10 +125,16 @@ Parser::Factor::Factor(Source& source): Interface(source)
 {}
 bool Parser::Factor::parse(){
     if(
+        FuncCall(source).parse() ||
+        (
+            matchOne<'('>(source)
+            && skipWhiteSpaces(source)
+            && Expression(source).parse()
+            && skipWhiteSpaces(source)
+            && matchOne<')'>(source)
+        ) || 
         Designator(source).parse() ||
-        Number(source).parse() ||
-        (matchOne<'('>(source) && Expression(source).parse() && matchOne<')'>(source))
-        // TODO: FuncCall
+        Number(source).parse()
     ){
         return true;
     }
@@ -192,6 +198,31 @@ bool Parser::Assignment::parse(){
         && skipWhiteSpaces(source)
         && Expression(source).parse()
     ){
+        return true;
+    }
+    return false;
+}
+
+Parser::FuncCall::FuncCall(Source& source): Interface(source)
+{}
+bool Parser::FuncCall::parse(){
+    if(
+        matchAllOf<'c', 'a', 'l', 'l'>(source)
+        && skipWhiteSpaces(source)
+        && Ident(source).parse()
+    ){
+        if(skipWhiteSpaces(source) && matchOne<'('>(source)){
+            if(skipWhiteSpaces(source) && Expression(source).parse()){
+                while(skipWhiteSpaces(source) && matchOne<','>(source)){
+                    if(skipWhiteSpaces(source) && !Expression(source).parse()){
+                        return false;
+                    }
+                }
+            }
+            if(skipWhiteSpaces(source) && !matchOne<')'>(source)){
+                return false;
+            }
+        }
         return true;
     }
     return false;

@@ -79,6 +79,12 @@ public:
     bool parse();
 };
 
+class FuncCall: public Interface{
+public:
+    FuncCall(Source& source);
+    bool parse();
+};
+
 }
 
 

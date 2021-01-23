@@ -36,7 +36,7 @@ TEST(unit_Parser, Factor_expression){
     EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Factor_funcCall){
+TEST(unit_Parser, Factor_funcCall){
     std::stringstream input("call test");
     Source source(input);
     Parser::Factor factor(source);
