@@ -179,3 +179,20 @@ bool Parser::Relation::parse(){
     }
     return false;
 }
+
+Parser::Assignment::Assignment(Source& source): Interface(source)
+{}
+bool Parser::Assignment::parse(){
+    if(
+        matchAllOf<'l', 'e', 't'>(source)
+        && skipWhiteSpaces(source)
+        && Designator(source).parse()
+        && skipWhiteSpaces(source)
+        && matchAllOf<'<', '-'>(source)
+        && skipWhiteSpaces(source)
+        && Expression(source).parse()
+    ){
+        return true;
+    }
+    return false;
+}

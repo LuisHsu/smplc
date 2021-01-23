@@ -73,6 +73,12 @@ public:
     bool parse();
 };
 
+class Assignment: public Interface{
+public:
+    Assignment(Source& source);
+    bool parse();
+};
+
 }
 
 
