@@ -104,3 +104,17 @@ bool Parser::Designator::parse(){
     }
     return false;
 }
+
+Parser::Factor::Factor(Source& source): Interface(source)
+{}
+bool Parser::Factor::parse(){
+    if(
+        Designator(source).parse() ||
+        Number(source).parse()
+        // TODO: Expression
+        // TODO: FuncCall
+    ){
+        return true;
+    }
+    return false;
+}

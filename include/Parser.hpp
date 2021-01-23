@@ -49,6 +49,11 @@ public:
     bool parse();
 };
 
+class Factor: public Interface{
+public:
+    Factor(Source& source);
+    bool parse();
+};
 
 }
 

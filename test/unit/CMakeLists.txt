@@ -46,3 +46,6 @@ add_unittest(test_Parser_Number
 add_unittest(test_Parser_Designator
     test_Parser_Designator.cpp
 )
+add_unittest(test_Parser_Factor
+    test_Parser_Factor.cpp
+)
