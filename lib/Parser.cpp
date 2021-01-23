@@ -140,3 +140,18 @@ bool Parser::Term::parse(){
     }
     return false;
 }
+
+Parser::Expression::Expression(Source& source): Interface(source)
+{}
+bool Parser::Expression::parse(){
+    if(Term(source).parse()){
+        while(
+            skipWhiteSpaces(source)
+            && (matchOne<'+'>(source) || matchOne<'-'>(source))
+            && skipWhiteSpaces(source)
+            && Term(source).parse()
+        );
+        return true;
+    }
+    return false;
+}

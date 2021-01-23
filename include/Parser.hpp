@@ -61,6 +61,12 @@ public:
     bool parse();
 };
 
+class Expression: public Interface{
+public:
+    Expression(Source& source);
+    bool parse();
+};
+
 }
 
 
