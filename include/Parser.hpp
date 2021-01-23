@@ -55,6 +55,12 @@ public:
     bool parse();
 };
 
+class Term: public Interface{
+public:
+    Term(Source& source);
+    bool parse();
+};
+
 }
 
 

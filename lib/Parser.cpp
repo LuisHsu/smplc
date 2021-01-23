@@ -7,7 +7,7 @@
 #include <Parser.hpp>
 
 template<char ch, char... rem>
-bool matchAllOf(Source& source){
+static bool matchAllOf(Source& source){
     int current = source.get();
     if(current == ch){
         if constexpr (sizeof...(rem) > 0){
@@ -23,7 +23,7 @@ bool matchAllOf(Source& source){
 }
 
 template<char lower, char upper>
-bool matchRange(Source& source, int& ret){
+static bool matchRange(Source& source, int& ret){
     ret = source.get();
     if((ret >= lower) && (ret <= upper)){
         return true;
@@ -35,7 +35,7 @@ bool matchRange(Source& source, int& ret){
 }
 
 template<char target>
-bool matchOne(Source& source){
+static bool matchOne(Source& source){
     int current = source.get();
     if(current == target){
         return true;
@@ -43,6 +43,13 @@ bool matchOne(Source& source){
         source.putback(current);
         return false;
     }
+}
+
+static bool skipWhiteSpaces(Source& source){
+    int current;
+    while((current = source.get()) == ' ');
+    source.putback(current);
+    return true;
 }
 
 Parser::Interface::Interface(Source& source):
@@ -114,6 +121,21 @@ bool Parser::Factor::parse(){
         // TODO: Expression
         // TODO: FuncCall
     ){
+        return true;
+    }
+    return false;
+}
+
+Parser::Term::Term(Source& source): Interface(source)
+{}
+bool Parser::Term::parse(){
+    if(Factor(source).parse()){
+        while(
+            skipWhiteSpaces(source)
+            && (matchOne<'*'>(source) || matchOne<'/'>(source))
+            && skipWhiteSpaces(source)
+            && Factor(source).parse()
+        );
         return true;
     }
     return false;
