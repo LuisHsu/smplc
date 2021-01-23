@@ -1,0 +1,33 @@
+add_unittest(test_Parser_Letter
+    test_Parser_Letter.cpp
+)
+add_unittest(test_Parser_Digit
+    test_Parser_Digit.cpp
+)
+add_unittest(test_Parser_RelOp
+    test_Parser_RelOp.cpp
+)
+add_unittest(test_Parser_Ident
+    test_Parser_Ident.cpp
+)
+add_unittest(test_Parser_Number
+    test_Parser_Number.cpp
+)
+add_unittest(test_Parser_Designator
+    test_Parser_Designator.cpp
+)
+add_unittest(test_Parser_Factor
+    test_Parser_Factor.cpp
+)
+add_unittest(test_Parser_Term
+    test_Parser_Term.cpp
+)
+add_unittest(test_Parser_Expression
+    test_Parser_Expression.cpp
+)
+add_unittest(test_Parser_Relation
+    test_Parser_Relation.cpp
+)
+add_unittest(test_Parser_Assignment
+    test_Parser_Assignment.cpp
+)
