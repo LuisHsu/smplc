@@ -64,3 +64,6 @@ add_unittest(test_Parser_FuncBody
 add_unittest(test_Parser_FuncDecl
     test_Parser_FuncDecl.cpp
 )
+add_unittest(test_Parser_Computation
+    test_Parser_Computation.cpp
+)

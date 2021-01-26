@@ -145,6 +145,12 @@ public:
     bool parse();
 };
 
+class Computation: public Interface{
+public:
+    Computation(Source& source);
+    bool parse();
+};
+
 }
 
 #endif

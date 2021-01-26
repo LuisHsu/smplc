@@ -416,3 +416,28 @@ bool Parser::FuncDecl::parse(){
     }
     return false;
 }
+
+Parser::Computation::Computation(Source& source): Interface(source)
+{}
+bool Parser::Computation::parse(){
+    if(
+        skipWhiteSpaces(source)
+        && matchAllOf<'m', 'a', 'i', 'n'>(source)
+    ){
+        while(skipWhiteSpaces(source) && VarDecl(source).parse());
+        while(skipWhiteSpaces(source) && FuncDecl(source).parse());
+        if(
+            skipWhiteSpaces(source)
+            && matchOne<'{'>(source)
+            && skipWhiteSpaces(source)
+            && StatSequence(source).parse()
+            && skipWhiteSpaces(source)
+            && matchOne<'}'>(source)
+            && skipWhiteSpaces(source)
+            && matchOne<'.'>(source)
+        ){
+            return true;
+        }
+    }
+    return false;
+}
