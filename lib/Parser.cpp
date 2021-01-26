@@ -339,3 +339,22 @@ bool Parser::TypeDecl::parse(){
     }
     return false;
 }
+
+Parser::VarDecl::VarDecl(Source& source): Interface(source)
+{}
+bool Parser::VarDecl::parse(){
+    if(
+        TypeDecl(source).parse()
+        && skipWhiteSpaces(source)
+        && Ident(source).parse()
+    ){
+        while(
+            skipWhiteSpaces(source)
+            && matchOne<','>(source)
+            && skipWhiteSpaces(source)
+            && Ident(source).parse()
+        );
+        return skipWhiteSpaces(source) && matchOne<';'>(source);
+    }
+    return false;
+}

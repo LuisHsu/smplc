@@ -121,6 +121,12 @@ public:
     bool parse();
 };
 
+class VarDecl: public Interface{
+public:
+    VarDecl(Source& source);
+    bool parse();
+};
+
 }
 
 #endif
