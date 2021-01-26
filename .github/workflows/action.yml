@@ -10,6 +10,8 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
+      env:
+        GITHUB_WORKSPACE:  /home/smplc
     - name: Build
       run: mkdir build && cd bulid && cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug .. && ninja
     - name: Test
