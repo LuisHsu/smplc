@@ -85,6 +85,12 @@ public:
     bool parse();
 };
 
+class ReturnStatement: public Interface{
+public:
+    ReturnStatement(Source& source);
+    bool parse();
+};
+
 }
 
 

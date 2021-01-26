@@ -227,3 +227,15 @@ bool Parser::FuncCall::parse(){
     }
     return false;
 }
+
+Parser::ReturnStatement::ReturnStatement(Source& source): Interface(source)
+{}
+bool Parser::ReturnStatement::parse(){
+    if(matchAllOf<'r', 'e', 't', 'u', 'r', 'n'>(source)){
+        if(skipWhiteSpaces(source) && Expression(source).parse()){
+            return true;
+        }
+        return true;
+    }
+    return false;
+}
