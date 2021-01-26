@@ -28,7 +28,7 @@ TEST(unit_Parser, Statement_ifStatement){
     EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Statement_whileStatement){
+TEST(unit_Parser, Statement_whileStatement){
     std::stringstream input("while i < 5 do call OutputNewLine od");
     Source source(input);
     Parser::Statement stmt(source);

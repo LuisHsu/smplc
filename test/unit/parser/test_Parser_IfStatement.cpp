@@ -43,3 +43,11 @@ TEST(unit_Parser, IfStatement_without_relation){
     EXPECT_FALSE(stmt.parse());
     EXPECT_EQ(source.get(), 'l');
 }
+
+TEST(unit_Parser, IfStatement_without_if){
+    std::stringstream input("3 > 0 then let testid <- 4 fi");
+    Source source(input);
+    Parser::IfStatement stmt(source);
+    EXPECT_FALSE(stmt.parse());
+    EXPECT_EQ(source.get(), '3');
+}

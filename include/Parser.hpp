@@ -109,8 +109,12 @@ public:
     bool parse();
 };
 
+class WhileStatement: public Interface{
+public:
+    WhileStatement(Source& source);
+    bool parse();
+};
+
 }
-
-
 
 #endif
