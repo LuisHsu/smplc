@@ -247,7 +247,7 @@ bool Parser::Statement::parse(){
         Assignment(source).parse()
         || FuncCall(source).parse()
         || ReturnStatement(source).parse()
-        // TODO: ifStatement
+        || IfStatement(source).parse()
         // TODO: whileStatement
     ){
         return true;
@@ -265,6 +265,31 @@ bool Parser::StatSequence::parse(){
             }
         }
         return true;
+    }
+    return false;
+}
+
+Parser::IfStatement::IfStatement(Source& source): Interface(source)
+{}
+bool Parser::IfStatement::parse(){
+    if(
+        matchAllOf<'i', 'f'>(source)
+        && skipWhiteSpaces(source)
+        && Relation(source).parse()
+        && skipWhiteSpaces(source)
+        && matchAllOf<'t', 'h', 'e', 'n'>(source)
+        && skipWhiteSpaces(source)
+        && StatSequence(source).parse()
+    ){
+        if(
+            skipWhiteSpaces(source)
+            && matchAllOf<'e', 'l', 's', 'e'>(source)
+            && skipWhiteSpaces(source)
+            && StatSequence(source).parse()
+        ){
+
+        }
+        return skipWhiteSpaces(source) && matchAllOf<'f', 'i'>(source);
     }
     return false;
 }

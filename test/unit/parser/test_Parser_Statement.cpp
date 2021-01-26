@@ -20,7 +20,7 @@ TEST(unit_Parser, Statement_funcCall){
     EXPECT_EQ(source.get(), -1);
 }
 
-TEST(unit_Parser, DISABLED_Statement_ifStatement){
+TEST(unit_Parser, Statement_ifStatement){
     std::stringstream input("if val > 2 then call testfunc fi");
     Source source(input);
     Parser::Statement stmt(source);

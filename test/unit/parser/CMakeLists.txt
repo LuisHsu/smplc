@@ -43,3 +43,6 @@ add_unittest(test_Parser_Statement
 add_unittest(test_Parser_StatSequence
     test_Parser_StatSequence.cpp
 )
+add_unittest(test_Parser_IfStatement
+    test_Parser_IfStatement.cpp
+)

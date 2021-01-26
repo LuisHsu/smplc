@@ -103,6 +103,12 @@ public:
     bool parse();
 };
 
+class IfStatement: public Interface{
+public:
+    IfStatement(Source& source);
+    bool parse();
+};
+
 }
 
 
