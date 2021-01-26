@@ -378,3 +378,18 @@ bool Parser::FormalParam::parse(){
     }
     return false;
 }
+
+Parser::FuncBody::FuncBody(Source& source): Interface(source)
+{}
+bool Parser::FuncBody::parse(){
+    while(VarDecl(source).parse() && skipWhiteSpaces(source));
+    if(
+        matchOne<'{'>(source)
+        && skipWhiteSpaces(source)
+    ){
+        if(StatSequence(source).parse()){
+        }
+        return skipWhiteSpaces(source) && matchOne<'}'>(source);
+    }
+    return false;
+}

@@ -58,3 +58,6 @@ add_unittest(test_Parser_VarDecl
 add_unittest(test_Parser_FormalParam
     test_Parser_FormalParam.cpp
 )
+add_unittest(test_Parser_FuncBody
+    test_Parser_FuncBody.cpp
+)

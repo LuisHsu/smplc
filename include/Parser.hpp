@@ -133,6 +133,12 @@ public:
     bool parse();
 };
 
+class FuncBody: public Interface{
+public:
+    FuncBody(Source& source);
+    bool parse();
+};
+
 }
 
 #endif
