@@ -11,11 +11,11 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v2
     - name: Build & Test
-    - uses: ashutoshvarma/action-cmake-build@master
-        with:
-          cc: clang
-          cxx: clang++
-          build-type: Debug
-          configure-options: -G Ninja
-          run-test: true
-          install-build: false
+      uses: ashutoshvarma/action-cmake-build@master
+      with:
+        cc: clang
+        cxx: clang++
+        build-type: Debug
+        configure-options: -G Ninja
+        run-test: true
+        install-build: false
