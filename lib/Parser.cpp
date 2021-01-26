@@ -393,3 +393,26 @@ bool Parser::FuncBody::parse(){
     }
     return false;
 }
+
+Parser::FuncDecl::FuncDecl(Source& source): Interface(source)
+{}
+bool Parser::FuncDecl::parse(){
+    matchAllOf<'v', 'o', 'i', 'd'>(source);
+    if(
+        skipWhiteSpaces(source)
+        && matchAllOf<'f','u','n','c','t','i','o','n'>(source)
+        && skipWhiteSpaces(source)
+        && Ident(source).parse()
+        && skipWhiteSpaces(source)
+        && FormalParam(source).parse()
+        && skipWhiteSpaces(source)
+        && matchOne<';'>(source)
+        && skipWhiteSpaces(source)
+        && FuncBody(source).parse()
+        && skipWhiteSpaces(source)
+        && matchOne<';'>(source)
+    ){
+        return true;
+    }
+    return false;
+}

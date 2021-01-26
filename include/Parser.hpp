@@ -139,6 +139,12 @@ public:
     bool parse();
 };
 
+class FuncDecl: public Interface{
+public:
+    FuncDecl(Source& source);
+    bool parse();
+};
+
 }
 
 #endif
