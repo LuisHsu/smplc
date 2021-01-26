@@ -1,0 +1,15 @@
+name: smplc CI
+
+on: [push]
+
+jobs:
+  unit_test:
+    using: docker
+    image: luishsu/smplc
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Build
+      run: mkdir build && cd bulid && cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug .. && ninja
+    - name: Test
+      run: ctest
