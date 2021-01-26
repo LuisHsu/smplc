@@ -14,6 +14,16 @@ TEST(unit_Parser, Letter_a_to_z){
     EXPECT_FALSE(letter.parse());
 }
 
+TEST(unit_Parser, Letter_A_to_Z){
+    std::stringstream input("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    Source source(input);
+    Parser::Letter letter(source);
+    for(char i = 'A'; i <= 'Z'; ++i){
+        EXPECT_TRUE(letter.parse());
+    }
+    EXPECT_FALSE(letter.parse());
+}
+
 TEST(unit_Parser, Letter_unknown){
     std::stringstream input("@$");
     Source source(input);
