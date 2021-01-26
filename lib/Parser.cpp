@@ -254,3 +254,17 @@ bool Parser::Statement::parse(){
     }
     return false;
 }
+
+Parser::StatSequence::StatSequence(Source& source): Interface(source)
+{}
+bool Parser::StatSequence::parse(){
+    if(Statement(source).parse()){
+        while(skipWhiteSpaces(source) && matchOne<';'>(source)){
+            if(skipWhiteSpaces(source) && Statement(source).parse()){
+                
+            }
+        }
+        return true;
+    }
+    return false;
+}

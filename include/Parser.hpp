@@ -97,6 +97,12 @@ public:
     bool parse();
 };
 
+class StatSequence: public Interface{
+public:
+    StatSequence(Source& source);
+    bool parse();
+};
+
 }
 
 
