@@ -358,3 +358,23 @@ bool Parser::VarDecl::parse(){
     }
     return false;
 }
+
+Parser::FormalParam::FormalParam(Source& source): Interface(source)
+{}
+bool Parser::FormalParam::parse(){
+    if(
+        matchOne<'('>(source)
+        && skipWhiteSpaces(source)
+    ){
+        if(Ident(source).parse()){
+            while(
+                skipWhiteSpaces(source)
+                && matchOne<','>(source)
+                && skipWhiteSpaces(source)
+                && Ident(source).parse()
+            );
+        }
+        return skipWhiteSpaces(source) && matchOne<')'>(source);
+    }
+    return false;
+}

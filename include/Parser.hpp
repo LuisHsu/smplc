@@ -127,6 +127,12 @@ public:
     bool parse();
 };
 
+class FormalParam: public Interface{
+public:
+    FormalParam(Source& source);
+    bool parse();
+};
+
 }
 
 #endif
