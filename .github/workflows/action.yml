@@ -10,7 +10,12 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
-    - name: Build
-      run: mkdir build && cd bulid && cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug .. && ninja
-    - name: Test
-      run: ctest
+    - name: Build & Test
+    - uses: ashutoshvarma/action-cmake-build@master
+        with:
+          cc: clang
+          cxx: clang++
+          build-type: Debug
+          configure-options: -G Ninja
+          run-test: true
+          install-build: false
