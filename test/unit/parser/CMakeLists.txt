@@ -37,3 +37,6 @@ add_unittest(test_Parser_FuncCall
 add_unittest(test_Parser_ReturnStatement
     test_Parser_ReturnStatement.cpp
 )
+add_unittest(test_Parser_Statement
+    test_Parser_Statement.cpp
+)

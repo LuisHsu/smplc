@@ -60,7 +60,7 @@ Parser::Letter::Letter(Source& source): Interface(source)
 {}
 bool Parser::Letter::parse(){
     int letter;
-    return matchRange<'a', 'z'>(source, letter);
+    return matchRange<'a', 'z'>(source, letter) || matchRange<'A', 'Z'>(source, letter);
 }
 
 Parser::Digit::Digit(Source& source): Interface(source)
@@ -235,6 +235,21 @@ bool Parser::ReturnStatement::parse(){
         if(skipWhiteSpaces(source) && Expression(source).parse()){
             return true;
         }
+        return true;
+    }
+    return false;
+}
+
+Parser::Statement::Statement(Source& source): Interface(source)
+{}
+bool Parser::Statement::parse(){
+    if(
+        Assignment(source).parse()
+        || FuncCall(source).parse()
+        || ReturnStatement(source).parse()
+        // TODO: ifStatement
+        // TODO: whileStatement
+    ){
         return true;
     }
     return false;

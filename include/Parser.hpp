@@ -91,6 +91,12 @@ public:
     bool parse();
 };
 
+class Statement: public Interface{
+public:
+    Statement(Source& source);
+    bool parse();
+};
+
 }
 
 
