@@ -49,3 +49,6 @@ add_unittest(test_Parser_IfStatement
 add_unittest(test_Parser_WhileStatement
     test_Parser_WhileStatement.cpp
 )
+add_unittest(test_Parser_TypeDecl
+    test_Parser_TypeDecl.cpp
+)

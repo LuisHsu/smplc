@@ -115,6 +115,12 @@ public:
     bool parse();
 };
 
+class TypeDecl: public Interface{
+public:
+    TypeDecl(Source& source);
+    bool parse();
+};
+
 }
 
 #endif

@@ -312,3 +312,30 @@ bool Parser::WhileStatement::parse(){
     }
     return false;
 }
+
+Parser::TypeDecl::TypeDecl(Source& source): Interface(source)
+{}
+bool Parser::TypeDecl::parse(){
+    if(matchAllOf<'v', 'a', 'r'>(source)){
+        return true;
+    }else if(
+        matchAllOf<'a', 'r', 'r', 'a', 'y'>(source)
+        && skipWhiteSpaces(source)
+        && matchOne<'['>(source)
+        && skipWhiteSpaces(source)
+        && Number(source).parse()
+        && skipWhiteSpaces(source)
+        && matchOne<']'>(source)
+    ){
+        while(
+            skipWhiteSpaces(source)
+            && matchOne<'['>(source)
+            && skipWhiteSpaces(source)
+            && Number(source).parse()
+            && skipWhiteSpaces(source)
+            && matchOne<']'>(source)
+        );
+        return true;
+    }
+    return false;
+}
