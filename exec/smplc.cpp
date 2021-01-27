@@ -8,6 +8,7 @@
 
 #include <Source.hpp>
 #include <Exception.hpp>
+#include <Parser.hpp>
 
 #include "ColorPrint.hpp"
 
@@ -15,8 +16,10 @@ int main(int argc, char const *argv[]){
     // Check argument
     if(argc < 2){
         ColorPrint::fatal("no input files");
+        return -1;
     }else if(argc > 2){
         ColorPrint::fatal("only support one input file now");
+        return -1;
     }
     // Create source instance
     std::ifstream fileIn(argv[1]);
@@ -24,7 +27,9 @@ int main(int argc, char const *argv[]){
 
     // Parse
     try{
-        // TODO: parse
+        if(!Parser::Computation(sourceFile).parse()){
+            return -1;
+        }
     }catch(Exception& err){
         ColorPrint::fatal(err.what());
     }

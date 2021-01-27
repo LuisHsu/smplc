@@ -1,0 +1,7 @@
+main{
+    let abcdefghijklm <- 0;
+    let nopqrstuvwxyz <- 0;
+    let aa0123456789 <- 0;
+    let aa12bb <- 0;
+    let aa12bb45 <- 0;
+}.

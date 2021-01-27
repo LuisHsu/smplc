@@ -1,0 +1,8 @@
+main{
+    if 2 > 3 then return 1; fi;
+    if 3 < 2 then return 2; fi;
+    if 3 != 2 then return 3; fi;
+    if 3 == 2 then return 4; fi;
+    if 3 >= 2 then return 5; fi;
+    if 3 <= 2 then return 6; fi;
+}.
