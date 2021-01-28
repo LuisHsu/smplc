@@ -1,0 +1,7 @@
+main{
+    let val1 <- 0;
+    let val2 <- val1 + 3;
+    let val3 <- (val2 + 5);
+    let val4 <- call InputNum;
+    let val5 <- (val4 * (5 + 3));
+}.
