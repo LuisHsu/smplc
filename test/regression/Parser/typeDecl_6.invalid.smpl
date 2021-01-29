@@ -1,5 +1,5 @@
 main
-array arr1[2[3];
+array [2[3] arr1;
 {
     return 0;
 }.
