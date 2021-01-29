@@ -1,0 +1,13 @@
+main
+function testFunc1();{
+    return 0;
+};
+function testFunc2(param1);{
+    return 0;
+};
+function testFunc3(param1, param2);{
+    return 0;
+};
+{
+    return 0;
+}.
