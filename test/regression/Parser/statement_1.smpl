@@ -1,0 +1,11 @@
+main{
+    let val1 <- 3;
+    call OutputNewLine;
+    if 3 > 1 then
+        call OutputNum(6)
+    fi;
+    while 2 > 4 do
+        call InputNum
+    od;
+    return 0;
+}.
