@@ -1,0 +1,5 @@
+main
+void function testFunc1(); {};
+{
+    return 0;
+}.
