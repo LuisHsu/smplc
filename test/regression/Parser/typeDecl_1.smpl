@@ -1,0 +1,8 @@
+main
+var id1;
+var id2, id3;
+array arr1[2];
+array arr2[2][3];
+{
+    return 0;
+}.

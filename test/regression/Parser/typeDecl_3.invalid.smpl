@@ -1,0 +1,5 @@
+main
+array arr1[];
+{
+    return 0;
+}.
