@@ -1,0 +1,4 @@
+main{
+    let val1 <- 8
+    return 0;
+}.
