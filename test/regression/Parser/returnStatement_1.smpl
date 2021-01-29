@@ -1,0 +1,6 @@
+main{
+    if 2 > 3 then
+        return 1;
+    fi;
+    return;
+}.
