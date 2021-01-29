@@ -1,0 +1,8 @@
+main{
+    if 3 < 5 then call OutputNum(1) fi;
+    if 3 < 5 then
+        call OutputNum(1);
+    else
+        call OutputNum(0);
+    fi;
+}.
