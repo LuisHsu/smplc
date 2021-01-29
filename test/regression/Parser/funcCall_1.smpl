@@ -1,0 +1,11 @@
+main
+void function OutputTwo(a, b); {
+    call OutputNum(a);
+    call OutputNum(b);
+};
+{
+    call OutputNewLine;
+    call OutputNewLine();
+    call OutputNum(7);
+    call OutputTwo(56, 42);
+}.
