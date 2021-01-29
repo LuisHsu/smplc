@@ -1,0 +1,10 @@
+main
+void function testFunc1();{
+    call OutputNewLine;
+};
+function testFunc1();{
+    return 0;
+};
+{
+    return 0;
+}.
