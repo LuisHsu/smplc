@@ -31,3 +31,6 @@ add_subdirectory(parser)
 add_unittest(test_Source
     test_Source.cpp
 )
+add_unittest(test_Logger
+    test_Logger.cpp
+)
