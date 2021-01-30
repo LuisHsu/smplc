@@ -5,6 +5,7 @@
  */
 
 #include <Parser.hpp>
+#include <Logger.hpp>
 
 template<char ch, char... rem>
 static bool matchAllOf(Source& source){
@@ -50,6 +51,13 @@ static bool skipWhiteSpaces(Source& source){
     while((current = source.get()) == ' ');
     source.putback(current);
     return true;
+}
+
+static bool errorOnFalse(bool result, std::string errorMsg){
+    if(!result){
+        Logger::put(LogLevel::Error, std::string("parse error: ") + errorMsg);
+    }
+    return result;
 }
 
 Parser::Interface::Interface(Source& source):
@@ -420,21 +428,29 @@ bool Parser::FuncDecl::parse(){
 Parser::Computation::Computation(Source& source): Interface(source)
 {}
 bool Parser::Computation::parse(){
-    if(
-        skipWhiteSpaces(source)
-        && matchAllOf<'m', 'a', 'i', 'n'>(source)
-    ){
+    if(errorOnFalse(
+        skipWhiteSpaces(source) && matchAllOf<'m', 'a', 'i', 'n'>(source),
+        "expected 'main' in the begin of computation"
+    )){
         while(skipWhiteSpaces(source) && VarDecl(source).parse());
         while(skipWhiteSpaces(source) && FuncDecl(source).parse());
         if(
-            skipWhiteSpaces(source)
-            && matchOne<'{'>(source)
-            && skipWhiteSpaces(source)
-            && StatSequence(source).parse()
-            && skipWhiteSpaces(source)
-            && matchOne<'}'>(source)
-            && skipWhiteSpaces(source)
-            && matchOne<'.'>(source)
+            errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<'{'>(source), 
+                "expected '{' before computation body"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && StatSequence(source).parse(),
+                "no statements in computation body"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<'}'>(source),
+                "expected '}' after computation body"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<'.'>(source),
+                "expected '.' in the end of computation"
+            )
         ){
             return true;
         }

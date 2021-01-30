@@ -9,8 +9,25 @@
 #include <Source.hpp>
 #include <Exception.hpp>
 #include <Parser.hpp>
+#include <Logger.hpp>
 
 #include "ColorPrint.hpp"
+
+void printLogs(){
+    Logger::dump([](LogLevel level, std::string msg){
+        switch (level){
+        case LogLevel::Error :
+            ColorPrint::error(msg.c_str());
+            break;
+        case LogLevel::Warning :
+            ColorPrint::error(msg.c_str());
+            break;
+        case LogLevel::Info :
+            ColorPrint::error(msg.c_str());
+            break;
+        }
+    });
+}
 
 int main(int argc, char const *argv[]){
     // Check argument
@@ -27,11 +44,13 @@ int main(int argc, char const *argv[]){
 
     // Parse
     try{
-        if(!Parser::Computation(sourceFile).parse()){
+        if(!Parser::Computation(sourceFile).parse() || Logger::errorCount() > 0){
+            printLogs();
             return -1;
         }
     }catch(Exception& err){
         ColorPrint::fatal(err.what());
     }
+    printLogs();
     return 0;
 }
