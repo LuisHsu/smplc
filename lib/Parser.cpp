@@ -8,19 +8,21 @@
 #include <Logger.hpp>
 
 template<char ch, char... rem>
-static bool matchAllOf(Source& source){
+static unsigned int matchSequence(Source& source){
     int current = source.get();
+    unsigned int res = 0;
     if(current == ch){
         if constexpr (sizeof...(rem) > 0){
-            if(matchAllOf<rem...>(source)){
-                return true;
+            res += 1;
+            if((res += matchSequence<rem...>(source)) == (sizeof...(rem) + 1)){
+                return res;
             }
         }else{
-            return true;
+            return 1;
         }
     }
     source.putback(current);
-    return false;
+    return res;
 }
 
 template<char lower, char upper>
@@ -60,6 +62,13 @@ static bool errorOnFalse(bool result, std::string errorMsg){
     return result;
 }
 
+static bool errorOnPartial(unsigned int result, unsigned int expectedLen, std::string errorMsg){
+    if(result > 0 && result != expectedLen){
+        Logger::put(LogLevel::Error, std::string("parse error: ") + errorMsg);
+    }
+    return result == expectedLen;
+}
+
 Parser::Interface::Interface(Source& source):
     source(source)
 {}
@@ -82,12 +91,12 @@ Parser::RelOp::RelOp(Source& source): Interface(source)
 {}
 bool Parser::RelOp::parse(){
     return
-        matchAllOf<'=', '='>(source) ||
-        matchAllOf<'!', '='>(source) ||
-        matchAllOf<'>', '='>(source) ||
-        matchAllOf<'<', '='>(source) ||
-        matchOne<'<'>(source) ||
-        matchOne<'>'>(source);
+        (matchSequence<'=', '='>(source) == 2) ||
+        (matchSequence<'!', '='>(source) == 2) ||
+        (matchSequence<'>', '='>(source) == 2) ||
+        (matchSequence<'<', '='>(source) == 2) ||
+        matchOne<'>'>(source) ||
+        matchOne<'<'>(source);
 }
 
 Parser::Ident::Ident(Source& source): Interface(source)
@@ -183,11 +192,17 @@ Parser::Relation::Relation(Source& source): Interface(source)
 {}
 bool Parser::Relation::parse(){
     if(
-        Expression(source).parse()
-        && skipWhiteSpaces(source)
-        && RelOp(source).parse()
-        && skipWhiteSpaces(source)
-        && Expression(source).parse()
+        errorOnFalse(Expression(source).parse(),
+            "expected left expression in relation"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && RelOp(source).parse(),
+            "expected relation operator in relation"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Expression(source).parse(),
+            "expected right expression in relation"
+        )
     ){
         return true;
     }
@@ -198,13 +213,21 @@ Parser::Assignment::Assignment(Source& source): Interface(source)
 {}
 bool Parser::Assignment::parse(){
     if(
-        matchAllOf<'l', 'e', 't'>(source)
-        && skipWhiteSpaces(source)
-        && Designator(source).parse()
-        && skipWhiteSpaces(source)
-        && matchAllOf<'<', '-'>(source)
-        && skipWhiteSpaces(source)
-        && Expression(source).parse()
+        errorOnPartial(matchSequence<'l', 'e', 't'>(source), 3,
+            "expected 'let' in assignment"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Designator(source).parse(),
+            "expected designator in assignment"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && (matchSequence<'<', '-'>(source) == 2),
+            "expected '<-' in assignment"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Expression(source).parse(),
+            "expected expression in assignment"
+        )
     ){
         return true;
     }
@@ -215,21 +238,29 @@ Parser::FuncCall::FuncCall(Source& source): Interface(source)
 {}
 bool Parser::FuncCall::parse(){
     if(
-        matchAllOf<'c', 'a', 'l', 'l'>(source)
-        && skipWhiteSpaces(source)
-        && Ident(source).parse()
+        errorOnPartial(matchSequence<'c', 'a', 'l', 'l'>(source), 4,
+            "expected 'call' in function call"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Ident(source).parse(),
+            "expected function name in function call"
+        )
     ){
         if(skipWhiteSpaces(source) && matchOne<'('>(source)){
             if(skipWhiteSpaces(source) && Expression(source).parse()){
                 while(skipWhiteSpaces(source) && matchOne<','>(source)){
-                    if(skipWhiteSpaces(source) && !Expression(source).parse()){
+                    if(!errorOnFalse(
+                        skipWhiteSpaces(source) && Expression(source).parse(),
+                        "expected expression after ',' in function arguments"
+                    )){
                         return false;
                     }
-                }
+                };
             }
-            if(skipWhiteSpaces(source) && !matchOne<')'>(source)){
-                return false;
-            }
+            return errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<')'>(source),
+                "expected ')' after function arguments"
+            );
         }
         return true;
     }
@@ -239,7 +270,9 @@ bool Parser::FuncCall::parse(){
 Parser::ReturnStatement::ReturnStatement(Source& source): Interface(source)
 {}
 bool Parser::ReturnStatement::parse(){
-    if(matchAllOf<'r', 'e', 't', 'u', 'r', 'n'>(source)){
+    if(errorOnPartial(matchSequence<'r', 'e', 't', 'u', 'r', 'n'>(source), 6,
+        "expected 'return' in return statement"
+    )){
         if(skipWhiteSpaces(source) && Expression(source).parse()){
             return true;
         }
@@ -281,23 +314,37 @@ Parser::IfStatement::IfStatement(Source& source): Interface(source)
 {}
 bool Parser::IfStatement::parse(){
     if(
-        matchAllOf<'i', 'f'>(source)
-        && skipWhiteSpaces(source)
-        && Relation(source).parse()
-        && skipWhiteSpaces(source)
-        && matchAllOf<'t', 'h', 'e', 'n'>(source)
-        && skipWhiteSpaces(source)
-        && StatSequence(source).parse()
+        errorOnPartial(matchSequence<'i', 'f'>(source), 2,
+            "expected 'if' in if statement"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Relation(source).parse(),
+            "expected relation in if statement"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && (matchSequence<'t', 'h', 'e', 'n'>(source) == 4),
+            "expected 'then' before if statement body"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && StatSequence(source).parse(),
+            "no if statement body"
+        )
     ){
         if(
-            skipWhiteSpaces(source)
-            && matchAllOf<'e', 'l', 's', 'e'>(source)
-            && skipWhiteSpaces(source)
-            && StatSequence(source).parse()
+            skipWhiteSpaces(source) && errorOnPartial(matchSequence<'e', 'l', 's', 'e'>(source), 4,
+                "expected 'else' in else statement"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && StatSequence(source).parse(),
+                "no else statement body"
+            )
         ){
 
         }
-        return skipWhiteSpaces(source) && matchAllOf<'f', 'i'>(source);
+        return errorOnFalse(
+            skipWhiteSpaces(source) && (matchSequence<'f', 'i'>(source) == 2),
+            "expected 'fi' after if statement"
+        );
     }
     return false;
 }
@@ -306,15 +353,25 @@ Parser::WhileStatement::WhileStatement(Source& source): Interface(source)
 {}
 bool Parser::WhileStatement::parse(){
     if(
-        matchAllOf<'w', 'h', 'i', 'l', 'e'>(source)
-        && skipWhiteSpaces(source)
-        && Relation(source).parse()
-        && skipWhiteSpaces(source)
-        && matchAllOf<'d', 'o'>(source)
-        && skipWhiteSpaces(source)
-        && StatSequence(source).parse()
-        && skipWhiteSpaces(source)
-        && matchAllOf<'o', 'd'>(source)
+        errorOnPartial(matchSequence<'w', 'h', 'i', 'l', 'e'>(source), 5,
+            "expected 'while' in while statement"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Relation(source).parse(),
+            "expected relation operator in while statement"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && (matchSequence<'d', 'o'>(source) == 2),
+            "expected 'do' before while statement body"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && StatSequence(source).parse(),
+            "no while statement body"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source)&& (matchSequence<'o', 'd'>(source) == 2),
+            "expected 'od' after while statement body"
+        )
     ){
         return true;
     }
@@ -324,24 +381,38 @@ bool Parser::WhileStatement::parse(){
 Parser::TypeDecl::TypeDecl(Source& source): Interface(source)
 {}
 bool Parser::TypeDecl::parse(){
-    if(matchAllOf<'v', 'a', 'r'>(source)){
-        return true;
+    unsigned int varMatch = matchSequence<'v', 'a', 'r'>(source);
+    if(varMatch >= 2){
+        return errorOnFalse(varMatch == 3,
+            "expected 'var' in type declaration"
+        );
     }else if(
-        matchAllOf<'a', 'r', 'r', 'a', 'y'>(source)
-        && skipWhiteSpaces(source)
-        && matchOne<'['>(source)
-        && skipWhiteSpaces(source)
-        && Number(source).parse()
-        && skipWhiteSpaces(source)
-        && matchOne<']'>(source)
+        errorOnPartial(matchSequence<'a', 'r', 'r', 'a', 'y'>(source), 5,
+            "expected 'array' in type declaration"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<'['>(source),
+            "expected '[' in array type declaration"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Number(source).parse(),
+            "expected number in array type declaration"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<']'>(source),
+            "expected ']' in array type declaration"
+        )
     ){
         while(
-            skipWhiteSpaces(source)
-            && matchOne<'['>(source)
-            && skipWhiteSpaces(source)
-            && Number(source).parse()
-            && skipWhiteSpaces(source)
-            && matchOne<']'>(source)
+            skipWhiteSpaces(source) && matchOne<'['>(source)
+            && errorOnFalse(
+                skipWhiteSpaces(source) && Number(source).parse(),
+                "expected number in array type declaration"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<']'>(source),
+                "expected ']' in array type declaration"
+            )
         );
         return true;
     }
@@ -353,16 +424,23 @@ Parser::VarDecl::VarDecl(Source& source): Interface(source)
 bool Parser::VarDecl::parse(){
     if(
         TypeDecl(source).parse()
-        && skipWhiteSpaces(source)
-        && Ident(source).parse()
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Ident(source).parse(),
+            "expected identifier in variable declaration"
+        )
     ){
         while(
             skipWhiteSpaces(source)
             && matchOne<','>(source)
-            && skipWhiteSpaces(source)
-            && Ident(source).parse()
+            && errorOnFalse(
+                skipWhiteSpaces(source) && Ident(source).parse(),
+                "expected identifier in variable declaration"
+            )
         );
-        return skipWhiteSpaces(source) && matchOne<';'>(source);
+        return errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<';'>(source),
+            "expected ';' after variable declaration"
+        );
     }
     return false;
 }
@@ -370,19 +448,24 @@ bool Parser::VarDecl::parse(){
 Parser::FormalParam::FormalParam(Source& source): Interface(source)
 {}
 bool Parser::FormalParam::parse(){
-    if(
-        matchOne<'('>(source)
-        && skipWhiteSpaces(source)
-    ){
+    if(errorOnFalse(
+        matchOne<'('>(source) && skipWhiteSpaces(source),
+        "expected '(' before formal parameters"
+    )){
         if(Ident(source).parse()){
             while(
                 skipWhiteSpaces(source)
                 && matchOne<','>(source)
-                && skipWhiteSpaces(source)
-                && Ident(source).parse()
+                && errorOnFalse(
+                    skipWhiteSpaces(source) && Ident(source).parse(),
+                    "expected identifier after ',' in formal parameters"
+                )
             );
         }
-        return skipWhiteSpaces(source) && matchOne<')'>(source);
+        return errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<')'>(source),
+            "expected ')' after formal parameters"
+        );
     }
     return false;
 }
@@ -391,13 +474,16 @@ Parser::FuncBody::FuncBody(Source& source): Interface(source)
 {}
 bool Parser::FuncBody::parse(){
     while(VarDecl(source).parse() && skipWhiteSpaces(source));
-    if(
-        matchOne<'{'>(source)
-        && skipWhiteSpaces(source)
-    ){
+    if(errorOnFalse(
+        matchOne<'{'>(source) && skipWhiteSpaces(source),
+        "expected '{' before function body"
+    )){
         if(StatSequence(source).parse()){
         }
-        return skipWhiteSpaces(source) && matchOne<'}'>(source);
+        return errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<'}'>(source),
+            "expected '}' after function body"
+        );
     }
     return false;
 }
@@ -405,20 +491,33 @@ bool Parser::FuncBody::parse(){
 Parser::FuncDecl::FuncDecl(Source& source): Interface(source)
 {}
 bool Parser::FuncDecl::parse(){
-    matchAllOf<'v', 'o', 'i', 'd'>(source);
-    if(
-        skipWhiteSpaces(source)
-        && matchAllOf<'f','u','n','c','t','i','o','n'>(source)
-        && skipWhiteSpaces(source)
-        && Ident(source).parse()
-        && skipWhiteSpaces(source)
-        && FormalParam(source).parse()
-        && skipWhiteSpaces(source)
-        && matchOne<';'>(source)
-        && skipWhiteSpaces(source)
-        && FuncBody(source).parse()
-        && skipWhiteSpaces(source)
-        && matchOne<';'>(source)
+    errorOnPartial(matchSequence<'v', 'o', 'i', 'd'>(source), 4,
+        "expected 'void' in void function"
+    );
+    if(skipWhiteSpaces(source) && 
+        errorOnPartial(matchSequence<'f','u','n','c','t','i','o','n'>(source), 8,
+            "expected 'function' in function declaration"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && Ident(source).parse(),
+            "expected identifier in function signature"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && FormalParam(source).parse(),
+            "expected formal parameter in function signature"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<';'>(source),
+            "expected ';' after function signature"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && FuncBody(source).parse(),
+            "no function body"
+        )
+        && errorOnFalse(
+            skipWhiteSpaces(source) && matchOne<';'>(source),
+            "expected ';' after function declaration"
+        )
     ){
         return true;
     }
@@ -429,7 +528,7 @@ Parser::Computation::Computation(Source& source): Interface(source)
 {}
 bool Parser::Computation::parse(){
     if(errorOnFalse(
-        skipWhiteSpaces(source) && matchAllOf<'m', 'a', 'i', 'n'>(source),
+        skipWhiteSpaces(source) && (matchSequence<'m', 'a', 'i', 'n'>(source) == 4),
         "expected 'main' in the begin of computation"
     )){
         while(skipWhiteSpaces(source) && VarDecl(source).parse());

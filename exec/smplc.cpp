@@ -32,7 +32,7 @@ void printLogs(){
 int main(int argc, char const *argv[]){
     // Check argument
     if(argc < 2){
-        ColorPrint::fatal("no input files");
+        ColorPrint::fatal("no input file");
         return -1;
     }else if(argc > 2){
         ColorPrint::fatal("only support one input file now");
@@ -40,6 +40,10 @@ int main(int argc, char const *argv[]){
     }
     // Create source instance
     std::ifstream fileIn(argv[1]);
+    if(!fileIn.is_open()){
+        ColorPrint::fatal("can't open input file");
+        return -1;
+    }
     Source sourceFile(fileIn);
 
     // Parse
