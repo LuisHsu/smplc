@@ -12,7 +12,6 @@
 #include <Exception.hpp>
 #include <Parser.hpp>
 #include <Logger.hpp>
-#include <PrintPass.hpp>
 
 #include "ColorPrint.hpp"
 
