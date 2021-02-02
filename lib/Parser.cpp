@@ -69,25 +69,25 @@ static bool errorOnPartial(unsigned int result, unsigned int expectedLen, std::s
     return result == expectedLen;
 }
 
-Parser::Interface::Interface(Source& source):
-    source(source)
+Parser::Interface::Interface(Source& source, std::vector<Pass>& passes):
+    source(source), passes(passes)
 {}
 
-Parser::Letter::Letter(Source& source): Interface(source)
+Parser::Letter::Letter(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Letter::parse(){
     int letter;
     return matchRange<'a', 'z'>(source, letter) || matchRange<'A', 'Z'>(source, letter);
 }
 
-Parser::Digit::Digit(Source& source): Interface(source)
+Parser::Digit::Digit(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Digit::parse(){
     int digit;
     return matchRange<'0', '9'>(source, digit);
 }
 
-Parser::RelOp::RelOp(Source& source): Interface(source)
+Parser::RelOp::RelOp(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::RelOp::parse(){
     return
@@ -99,34 +99,34 @@ bool Parser::RelOp::parse(){
         matchOne<'<'>(source);
 }
 
-Parser::Ident::Ident(Source& source): Interface(source)
+Parser::Ident::Ident(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Ident::parse(){
-    if(Letter(source).parse()){
-        while(Letter(source).parse() || Digit(source).parse());
+    if(Letter(source, passes).parse()){
+        while(Letter(source, passes).parse() || Digit(source, passes).parse());
         return true;
     }
     return false;
 }
 
-Parser::Number::Number(Source& source): Interface(source)
+Parser::Number::Number(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Number::parse(){
-    if(Digit(source).parse()){
-        while(Digit(source).parse());
+    if(Digit(source, passes).parse()){
+        while(Digit(source, passes).parse());
         return true;
     }
     return false;
 }
 
-Parser::Designator::Designator(Source& source): Interface(source)
+Parser::Designator::Designator(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Designator::parse(){
-    if(Ident(source).parse()){
+    if(Ident(source, passes).parse()){
         while(skipWhiteSpaces(source) && matchOne<'['>(source)){
             if(!(
                 skipWhiteSpaces(source)
-                && Expression(source).parse()
+                && Expression(source, passes).parse()
                 && skipWhiteSpaces(source)
                 && matchOne<']'>(source)
             )){
@@ -138,69 +138,69 @@ bool Parser::Designator::parse(){
     return false;
 }
 
-Parser::Factor::Factor(Source& source): Interface(source)
+Parser::Factor::Factor(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Factor::parse(){
     if(
-        FuncCall(source).parse() ||
+        FuncCall(source, passes).parse() ||
         (
             matchOne<'('>(source)
             && skipWhiteSpaces(source)
-            && Expression(source).parse()
+            && Expression(source, passes).parse()
             && skipWhiteSpaces(source)
             && matchOne<')'>(source)
         ) || 
-        Designator(source).parse() ||
-        Number(source).parse()
+        Designator(source, passes).parse() ||
+        Number(source, passes).parse()
     ){
         return true;
     }
     return false;
 }
 
-Parser::Term::Term(Source& source): Interface(source)
+Parser::Term::Term(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Term::parse(){
-    if(Factor(source).parse()){
+    if(Factor(source, passes).parse()){
         while(
             skipWhiteSpaces(source)
             && (matchOne<'*'>(source) || matchOne<'/'>(source))
             && skipWhiteSpaces(source)
-            && Factor(source).parse()
+            && Factor(source, passes).parse()
         );
         return true;
     }
     return false;
 }
 
-Parser::Expression::Expression(Source& source): Interface(source)
+Parser::Expression::Expression(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Expression::parse(){
-    if(Term(source).parse()){
+    if(Term(source, passes).parse()){
         while(
             skipWhiteSpaces(source)
             && (matchOne<'+'>(source) || matchOne<'-'>(source))
             && skipWhiteSpaces(source)
-            && Term(source).parse()
+            && Term(source, passes).parse()
         );
         return true;
     }
     return false;
 }
 
-Parser::Relation::Relation(Source& source): Interface(source)
+Parser::Relation::Relation(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Relation::parse(){
     if(
-        errorOnFalse(Expression(source).parse(),
+        errorOnFalse(Expression(source, passes).parse(),
             "expected left expression in relation"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && RelOp(source).parse(),
+            skipWhiteSpaces(source) && RelOp(source, passes).parse(),
             "expected relation operator in relation"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Expression(source).parse(),
+            skipWhiteSpaces(source) && Expression(source, passes).parse(),
             "expected right expression in relation"
         )
     ){
@@ -209,7 +209,7 @@ bool Parser::Relation::parse(){
     return false;
 }
 
-Parser::Assignment::Assignment(Source& source): Interface(source)
+Parser::Assignment::Assignment(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Assignment::parse(){
     if(
@@ -217,7 +217,7 @@ bool Parser::Assignment::parse(){
             "expected 'let' in assignment"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Designator(source).parse(),
+            skipWhiteSpaces(source) && Designator(source, passes).parse(),
             "expected designator in assignment"
         )
         && errorOnFalse(
@@ -225,7 +225,7 @@ bool Parser::Assignment::parse(){
             "expected '<-' in assignment"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Expression(source).parse(),
+            skipWhiteSpaces(source) && Expression(source, passes).parse(),
             "expected expression in assignment"
         )
     ){
@@ -234,7 +234,7 @@ bool Parser::Assignment::parse(){
     return false;
 }
 
-Parser::FuncCall::FuncCall(Source& source): Interface(source)
+Parser::FuncCall::FuncCall(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::FuncCall::parse(){
     if(
@@ -242,15 +242,15 @@ bool Parser::FuncCall::parse(){
             "expected 'call' in function call"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Ident(source).parse(),
+            skipWhiteSpaces(source) && Ident(source, passes).parse(),
             "expected function name in function call"
         )
     ){
         if(skipWhiteSpaces(source) && matchOne<'('>(source)){
-            if(skipWhiteSpaces(source) && Expression(source).parse()){
+            if(skipWhiteSpaces(source) && Expression(source, passes).parse()){
                 while(skipWhiteSpaces(source) && matchOne<','>(source)){
                     if(!errorOnFalse(
-                        skipWhiteSpaces(source) && Expression(source).parse(),
+                        skipWhiteSpaces(source) && Expression(source, passes).parse(),
                         "expected expression after ',' in function arguments"
                     )){
                         return false;
@@ -267,13 +267,13 @@ bool Parser::FuncCall::parse(){
     return false;
 }
 
-Parser::ReturnStatement::ReturnStatement(Source& source): Interface(source)
+Parser::ReturnStatement::ReturnStatement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::ReturnStatement::parse(){
     if(errorOnPartial(matchSequence<'r', 'e', 't', 'u', 'r', 'n'>(source), 6,
         "expected 'return' in return statement"
     )){
-        if(skipWhiteSpaces(source) && Expression(source).parse()){
+        if(skipWhiteSpaces(source) && Expression(source, passes).parse()){
             return true;
         }
         return true;
@@ -281,27 +281,27 @@ bool Parser::ReturnStatement::parse(){
     return false;
 }
 
-Parser::Statement::Statement(Source& source): Interface(source)
+Parser::Statement::Statement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Statement::parse(){
     if(
-        Assignment(source).parse()
-        || FuncCall(source).parse()
-        || ReturnStatement(source).parse()
-        || IfStatement(source).parse()
-        || WhileStatement(source).parse()
+        Assignment(source, passes).parse()
+        || FuncCall(source, passes).parse()
+        || ReturnStatement(source, passes).parse()
+        || IfStatement(source, passes).parse()
+        || WhileStatement(source, passes).parse()
     ){
         return true;
     }
     return false;
 }
 
-Parser::StatSequence::StatSequence(Source& source): Interface(source)
+Parser::StatSequence::StatSequence(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::StatSequence::parse(){
-    if(Statement(source).parse()){
+    if(Statement(source, passes).parse()){
         while(skipWhiteSpaces(source) && matchOne<';'>(source)){
-            if(skipWhiteSpaces(source) && Statement(source).parse()){
+            if(skipWhiteSpaces(source) && Statement(source, passes).parse()){
                 
             }
         }
@@ -310,7 +310,7 @@ bool Parser::StatSequence::parse(){
     return false;
 }
 
-Parser::IfStatement::IfStatement(Source& source): Interface(source)
+Parser::IfStatement::IfStatement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::IfStatement::parse(){
     if(
@@ -318,7 +318,7 @@ bool Parser::IfStatement::parse(){
             "expected 'if' in if statement"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Relation(source).parse(),
+            skipWhiteSpaces(source) && Relation(source, passes).parse(),
             "expected relation in if statement"
         )
         && errorOnFalse(
@@ -326,7 +326,7 @@ bool Parser::IfStatement::parse(){
             "expected 'then' before if statement body"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && StatSequence(source).parse(),
+            skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
             "no if statement body"
         )
     ){
@@ -335,7 +335,7 @@ bool Parser::IfStatement::parse(){
                 "expected 'else' in else statement"
             )
             && errorOnFalse(
-                skipWhiteSpaces(source) && StatSequence(source).parse(),
+                skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
                 "no else statement body"
             )
         ){
@@ -349,7 +349,7 @@ bool Parser::IfStatement::parse(){
     return false;
 }
 
-Parser::WhileStatement::WhileStatement(Source& source): Interface(source)
+Parser::WhileStatement::WhileStatement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::WhileStatement::parse(){
     if(
@@ -357,7 +357,7 @@ bool Parser::WhileStatement::parse(){
             "expected 'while' in while statement"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Relation(source).parse(),
+            skipWhiteSpaces(source) && Relation(source, passes).parse(),
             "expected relation operator in while statement"
         )
         && errorOnFalse(
@@ -365,7 +365,7 @@ bool Parser::WhileStatement::parse(){
             "expected 'do' before while statement body"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && StatSequence(source).parse(),
+            skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
             "no while statement body"
         )
         && errorOnFalse(
@@ -378,7 +378,7 @@ bool Parser::WhileStatement::parse(){
     return false;
 }
 
-Parser::TypeDecl::TypeDecl(Source& source): Interface(source)
+Parser::TypeDecl::TypeDecl(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::TypeDecl::parse(){
     unsigned int varMatch = matchSequence<'v', 'a', 'r'>(source);
@@ -395,7 +395,7 @@ bool Parser::TypeDecl::parse(){
             "expected '[' in array type declaration"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Number(source).parse(),
+            skipWhiteSpaces(source) && Number(source, passes).parse(),
             "expected number in array type declaration"
         )
         && errorOnFalse(
@@ -406,7 +406,7 @@ bool Parser::TypeDecl::parse(){
         while(
             skipWhiteSpaces(source) && matchOne<'['>(source)
             && errorOnFalse(
-                skipWhiteSpaces(source) && Number(source).parse(),
+                skipWhiteSpaces(source) && Number(source, passes).parse(),
                 "expected number in array type declaration"
             )
             && errorOnFalse(
@@ -419,13 +419,13 @@ bool Parser::TypeDecl::parse(){
     return false;
 }
 
-Parser::VarDecl::VarDecl(Source& source): Interface(source)
+Parser::VarDecl::VarDecl(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::VarDecl::parse(){
     if(
-        TypeDecl(source).parse()
+        TypeDecl(source, passes).parse()
         && errorOnFalse(
-            skipWhiteSpaces(source) && Ident(source).parse(),
+            skipWhiteSpaces(source) && Ident(source, passes).parse(),
             "expected identifier in variable declaration"
         )
     ){
@@ -433,7 +433,7 @@ bool Parser::VarDecl::parse(){
             skipWhiteSpaces(source)
             && matchOne<','>(source)
             && errorOnFalse(
-                skipWhiteSpaces(source) && Ident(source).parse(),
+                skipWhiteSpaces(source) && Ident(source, passes).parse(),
                 "expected identifier in variable declaration"
             )
         );
@@ -445,19 +445,19 @@ bool Parser::VarDecl::parse(){
     return false;
 }
 
-Parser::FormalParam::FormalParam(Source& source): Interface(source)
+Parser::FormalParam::FormalParam(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::FormalParam::parse(){
     if(errorOnFalse(
         matchOne<'('>(source) && skipWhiteSpaces(source),
         "expected '(' before formal parameters"
     )){
-        if(Ident(source).parse()){
+        if(Ident(source, passes).parse()){
             while(
                 skipWhiteSpaces(source)
                 && matchOne<','>(source)
                 && errorOnFalse(
-                    skipWhiteSpaces(source) && Ident(source).parse(),
+                    skipWhiteSpaces(source) && Ident(source, passes).parse(),
                     "expected identifier after ',' in formal parameters"
                 )
             );
@@ -470,15 +470,15 @@ bool Parser::FormalParam::parse(){
     return false;
 }
 
-Parser::FuncBody::FuncBody(Source& source): Interface(source)
+Parser::FuncBody::FuncBody(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::FuncBody::parse(){
-    while(VarDecl(source).parse() && skipWhiteSpaces(source));
+    while(VarDecl(source, passes).parse() && skipWhiteSpaces(source));
     if(errorOnFalse(
         matchOne<'{'>(source) && skipWhiteSpaces(source),
         "expected '{' before function body"
     )){
-        if(StatSequence(source).parse()){
+        if(StatSequence(source, passes).parse()){
         }
         return errorOnFalse(
             skipWhiteSpaces(source) && matchOne<'}'>(source),
@@ -488,7 +488,7 @@ bool Parser::FuncBody::parse(){
     return false;
 }
 
-Parser::FuncDecl::FuncDecl(Source& source): Interface(source)
+Parser::FuncDecl::FuncDecl(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::FuncDecl::parse(){
     errorOnPartial(matchSequence<'v', 'o', 'i', 'd'>(source), 4,
@@ -499,11 +499,11 @@ bool Parser::FuncDecl::parse(){
             "expected 'function' in function declaration"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Ident(source).parse(),
+            skipWhiteSpaces(source) && Ident(source, passes).parse(),
             "expected identifier in function signature"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && FormalParam(source).parse(),
+            skipWhiteSpaces(source) && FormalParam(source, passes).parse(),
             "expected formal parameter in function signature"
         )
         && errorOnFalse(
@@ -511,7 +511,7 @@ bool Parser::FuncDecl::parse(){
             "expected ';' after function signature"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && FuncBody(source).parse(),
+            skipWhiteSpaces(source) && FuncBody(source, passes).parse(),
             "no function body"
         )
         && errorOnFalse(
@@ -524,22 +524,22 @@ bool Parser::FuncDecl::parse(){
     return false;
 }
 
-Parser::Computation::Computation(Source& source): Interface(source)
+Parser::Computation::Computation(Source& source, std::vector<Pass>& passes): Interface(source, passes)
 {}
 bool Parser::Computation::parse(){
     if(errorOnFalse(
         skipWhiteSpaces(source) && (matchSequence<'m', 'a', 'i', 'n'>(source) == 4),
         "expected 'main' in the begin of computation"
     )){
-        while(skipWhiteSpaces(source) && VarDecl(source).parse());
-        while(skipWhiteSpaces(source) && FuncDecl(source).parse());
+        while(skipWhiteSpaces(source) && VarDecl(source, passes).parse());
+        while(skipWhiteSpaces(source) && FuncDecl(source, passes).parse());
         if(
             errorOnFalse(
                 skipWhiteSpaces(source) && matchOne<'{'>(source), 
                 "expected '{' before computation body"
             )
             && errorOnFalse(
-                skipWhiteSpaces(source) && StatSequence(source).parse(),
+                skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
                 "no statements in computation body"
             )
             && errorOnFalse(
@@ -556,3 +556,51 @@ bool Parser::Computation::parse(){
     }
     return false;
 }
+
+void Parser::Pass::beforeParse(Letter&){}
+void Parser::Pass::beforeParse(Digit&){}
+void Parser::Pass::beforeParse(RelOp&){}
+void Parser::Pass::beforeParse(Ident&){}
+void Parser::Pass::beforeParse(Number&){}
+void Parser::Pass::beforeParse(Designator&){}
+void Parser::Pass::beforeParse(Factor&){}
+void Parser::Pass::beforeParse(Term&){}
+void Parser::Pass::beforeParse(Expression&){}
+void Parser::Pass::beforeParse(Relation&){}
+void Parser::Pass::beforeParse(Assignment&){}
+void Parser::Pass::beforeParse(FuncCall&){}
+void Parser::Pass::beforeParse(ReturnStatement&){}
+void Parser::Pass::beforeParse(Statement&){}
+void Parser::Pass::beforeParse(StatSequence&){}
+void Parser::Pass::beforeParse(IfStatement&){}
+void Parser::Pass::beforeParse(WhileStatement&){}
+void Parser::Pass::beforeParse(TypeDecl&){}
+void Parser::Pass::beforeParse(VarDecl&){}
+void Parser::Pass::beforeParse(FormalParam&){}
+void Parser::Pass::beforeParse(FuncBody&){}
+void Parser::Pass::beforeParse(FuncDecl&){}
+void Parser::Pass::beforeParse(Computation&){}
+
+void Parser::Pass::afterParse(Letter&){}
+void Parser::Pass::afterParse(Digit&){}
+void Parser::Pass::afterParse(RelOp&){}
+void Parser::Pass::afterParse(Ident&){}
+void Parser::Pass::afterParse(Number&){}
+void Parser::Pass::afterParse(Designator&){}
+void Parser::Pass::afterParse(Factor&){}
+void Parser::Pass::afterParse(Term&){}
+void Parser::Pass::afterParse(Expression&){}
+void Parser::Pass::afterParse(Relation&){}
+void Parser::Pass::afterParse(Assignment&){}
+void Parser::Pass::afterParse(FuncCall&){}
+void Parser::Pass::afterParse(ReturnStatement&){}
+void Parser::Pass::afterParse(Statement&){}
+void Parser::Pass::afterParse(StatSequence&){}
+void Parser::Pass::afterParse(IfStatement&){}
+void Parser::Pass::afterParse(WhileStatement&){}
+void Parser::Pass::afterParse(TypeDecl&){}
+void Parser::Pass::afterParse(VarDecl&){}
+void Parser::Pass::afterParse(FormalParam&){}
+void Parser::Pass::afterParse(FuncBody&){}
+void Parser::Pass::afterParse(FuncDecl&){}
+void Parser::Pass::afterParse(Computation&){}

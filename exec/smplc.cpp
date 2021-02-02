@@ -5,6 +5,7 @@
  */
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 #include <Source.hpp>
 #include <Exception.hpp>
@@ -46,9 +47,12 @@ int main(int argc, char const *argv[]){
     }
     Source sourceFile(fileIn);
 
+    // Create parser passes
+    std::vector<Parser::Pass> parserPasses;
+
     // Parse
     try{
-        if(!Parser::Computation(sourceFile).parse() || Logger::errorCount() > 0){
+        if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs();
             return -1;
         }
