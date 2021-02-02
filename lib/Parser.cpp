@@ -143,7 +143,7 @@ bool Parser::Ident::parse(){
     Letter letterObj(source, passes);
     isSuccess = false;
     if(letterObj.parse()){
-        identifier += (char) letterObj.letter;
+        identifier = std::string({(char)letterObj.letter});
         Digit digitObj(source, passes);
         while(letterObj.parse() || digitObj.parse()){
             if(letterObj.isSuccess){
@@ -160,11 +160,17 @@ bool Parser::Ident::parse(){
 Parser::Number::Number(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Number::parse(){
-    if(Digit(source, passes).parse()){
-        while(Digit(source, passes).parse());
-        return true;
+    runPassBeforeParse(*this, passes);
+    Digit digitObj(source, passes);
+    isSuccess = false;
+    if(digitObj.parse()){
+        value = digitObj.digit - '0';
+        while(digitObj.parse()){
+            value = value * 10 + (digitObj.digit - '0');
+        }
+        isSuccess = true;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Designator::Designator(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

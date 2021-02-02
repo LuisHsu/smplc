@@ -56,6 +56,7 @@ class Number: public Interface{
 public:
     Number(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    unsigned long long int value;
 };
 
 class Designator: public Interface{
