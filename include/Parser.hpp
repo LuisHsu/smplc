@@ -9,6 +9,7 @@
 namespace Parser{
 
 class Pass;
+class Expression;
 
 class Interface{
 public:
@@ -33,7 +34,6 @@ public:
     bool parse();
     int digit;
 };
-
 
 class RelOp: public Interface{
 public:
@@ -63,6 +63,8 @@ class Designator: public Interface{
 public:
     Designator(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    Ident identifier;
+    std::vector<Expression> expressions;
 };
 
 class Factor: public Interface{

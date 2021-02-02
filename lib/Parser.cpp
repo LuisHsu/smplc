@@ -173,23 +173,29 @@ bool Parser::Number::parse(){
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::Designator::Designator(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::Designator::Designator(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    identifier(source, passes)
 {}
 bool Parser::Designator::parse(){
-    if(Ident(source, passes).parse()){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    if(identifier.parse()){
         while(skipWhiteSpaces(source) && matchOne<'['>(source)){
+            Expression expression(source, passes);
             if(!(
                 skipWhiteSpaces(source)
-                && Expression(source, passes).parse()
+                && expression.parse()
                 && skipWhiteSpaces(source)
                 && matchOne<']'>(source)
             )){
-                return false;
+                return runPassAfterParse(false, *this, passes);
             }
+            expressions.push_back(expression);
         }
-        return true;
+        expressions.shrink_to_fit();
+        isSuccess = true;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Factor::Factor(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
