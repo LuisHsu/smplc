@@ -2,6 +2,7 @@
 #define SMPLC_Parser_DEF
 
 #include <vector>
+#include <string>
 #include <functional>
 #include <Source.hpp>
 
@@ -48,6 +49,7 @@ class Ident: public Interface{
 public:
     Ident(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    std::string identifier;
 };
 
 class Number: public Interface{

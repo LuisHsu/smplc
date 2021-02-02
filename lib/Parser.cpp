@@ -130,6 +130,8 @@ bool Parser::RelOp::parse(){
     }else if(matchOne<'<'>(source)){
         opType = Parser::RelOp::Type::LessThan;
         isSuccess = true;
+    }else{
+        isSuccess = false;
     }
     return runPassAfterParse(isSuccess, *this, passes);
 }
@@ -137,11 +139,22 @@ bool Parser::RelOp::parse(){
 Parser::Ident::Ident(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Ident::parse(){
-    if(Letter(source, passes).parse()){
-        while(Letter(source, passes).parse() || Digit(source, passes).parse());
-        return true;
+    runPassBeforeParse(*this, passes);
+    Letter letterObj(source, passes);
+    isSuccess = false;
+    if(letterObj.parse()){
+        identifier += (char) letterObj.letter;
+        Digit digitObj(source, passes);
+        while(letterObj.parse() || digitObj.parse()){
+            if(letterObj.isSuccess){
+                identifier += (char) letterObj.letter;
+            }else if(digitObj.isSuccess){
+                identifier += (char) digitObj.digit;
+            }
+        }
+        isSuccess = true;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Number::Number(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
