@@ -4,12 +4,14 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <variant>
 #include <Source.hpp>
 
 namespace Parser{
 
 class Pass;
 class Expression;
+class Term;
 
 class Interface{
 public:
@@ -67,29 +69,6 @@ public:
     std::vector<Expression> expressions;
 };
 
-class Factor: public Interface{
-public:
-    Factor(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
-    bool parse();
-};
-
-class Term: public Interface{
-public:
-    Term(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
-    bool parse();
-};
-
-class Expression: public Interface{
-public:
-    Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
-    bool parse();
-    enum class Type{
-        Plus, Minus
-    };
-    std::vector<Type> opTypes;
-    std::vector<Term> terms;
-};
-
 class Relation: public Interface{
 public:
     Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
@@ -106,6 +85,38 @@ class FuncCall: public Interface{
 public:
     FuncCall(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+};
+
+class Expression: public Interface{
+public:
+    Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
+    bool parse();
+    enum class Type{
+        Plus, Minus
+    };
+    std::vector<Type> opTypes;
+    std::vector<Term> terms;
+};
+
+class Factor: public Interface{
+public:
+    Factor(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
+    bool parse();
+
+    using ValueType = std::variant<std::monostate, Designator, Number, Expression, FuncCall>;
+    ValueType value;
+};
+
+class Term: public Interface{
+public:
+    Term(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
+    bool parse();
+
+    enum class Type{
+        Times, Divide
+    };
+    std::vector<Type> opTypes;
+    std::vector<Factor> factors;
 };
 
 class ReturnStatement: public Interface{

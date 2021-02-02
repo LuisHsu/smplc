@@ -201,36 +201,47 @@ bool Parser::Designator::parse(){
 Parser::Factor::Factor(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Factor::parse(){
-    if(
-        FuncCall(source, passes).parse() ||
+    runPassBeforeParse(*this, passes);
+    if(value.emplace<FuncCall>(source, passes).parse() ||
         (
             matchOne<'('>(source)
             && skipWhiteSpaces(source)
-            && Expression(source, passes).parse()
+            && value.emplace<Expression>(source, passes).parse()
             && skipWhiteSpaces(source)
             && matchOne<')'>(source)
         ) || 
-        Designator(source, passes).parse() ||
-        Number(source, passes).parse()
+        value.emplace<Designator>(source, passes).parse() ||
+        value.emplace<Number>(source, passes).parse()
     ){
-        return true;
+        isSuccess = true;
+    }else{
+        isSuccess = false;
+        value.emplace<std::monostate>();
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Term::Term(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Term::parse(){
-    if(Factor(source, passes).parse()){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    if(factors.emplace_back(source, passes).parse()){
         while(
             skipWhiteSpaces(source)
-            && (matchOne<'*'>(source) || matchOne<'/'>(source))
-            && skipWhiteSpaces(source)
-            && Factor(source, passes).parse()
+            && (
+                (matchOne<'*'>(source) && (opTypes.emplace_back(Type::Times) == Type::Times)) ||
+                (matchOne<'/'>(source) && (opTypes.emplace_back(Type::Divide) == Type::Divide))
+            ) && skipWhiteSpaces(source)
+            && factors.emplace_back(source, passes).parse()
         );
-        return true;
+        isSuccess = true;
     }
-    return false;
+    if(!factors.back().isSuccess){
+        factors.pop_back();
+    }
+    factors.shrink_to_fit();
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Expression::Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
