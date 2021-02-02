@@ -33,10 +33,15 @@ public:
     int digit;
 };
 
+
 class RelOp: public Interface{
 public:
+    enum class Type{
+        Equal, NonEqual, GreaterThan, GreaterEqual, LessThan, LessEqual
+    };
     RelOp(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    Type opType;
 };
 
 class Ident: public Interface{

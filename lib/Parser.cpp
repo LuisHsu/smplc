@@ -111,13 +111,27 @@ bool Parser::Digit::parse(){
 Parser::RelOp::RelOp(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::RelOp::parse(){
-    return
-        (matchSequence<'=', '='>(source) == 2) ||
-        (matchSequence<'!', '='>(source) == 2) ||
-        (matchSequence<'>', '='>(source) == 2) ||
-        (matchSequence<'<', '='>(source) == 2) ||
-        matchOne<'>'>(source) ||
-        matchOne<'<'>(source);
+    runPassBeforeParse(*this, passes);
+    if(matchSequence<'=', '='>(source) == 2){
+        opType = Parser::RelOp::Type::Equal;
+        isSuccess = true;
+    }else if(matchSequence<'!', '='>(source) == 2){
+        opType = Parser::RelOp::Type::NonEqual;
+        isSuccess = true;
+    }else if(matchSequence<'>', '='>(source) == 2){
+        opType = Parser::RelOp::Type::GreaterEqual;
+        isSuccess = true;
+    }else if(matchSequence<'<', '='>(source) == 2){
+        opType = Parser::RelOp::Type::LessEqual;
+        isSuccess = true;
+    }else if(matchOne<'>'>(source)){
+        opType = Parser::RelOp::Type::GreaterThan;
+        isSuccess = true;
+    }else if(matchOne<'<'>(source)){
+        opType = Parser::RelOp::Type::LessThan;
+        isSuccess = true;
+    }
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Ident::Ident(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
