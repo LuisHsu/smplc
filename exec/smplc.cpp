@@ -6,11 +6,13 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <functional>
 
 #include <Source.hpp>
 #include <Exception.hpp>
 #include <Parser.hpp>
 #include <Logger.hpp>
+#include <PrintPass.hpp>
 
 #include "ColorPrint.hpp"
 
@@ -48,7 +50,7 @@ int main(int argc, char const *argv[]){
     Source sourceFile(fileIn);
 
     // Create parser passes
-    std::vector<Parser::Pass> parserPasses;
+    std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
 
     // Parse
     try{

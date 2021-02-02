@@ -69,25 +69,43 @@ static bool errorOnPartial(unsigned int result, unsigned int expectedLen, std::s
     return result == expectedLen;
 }
 
-Parser::Interface::Interface(Source& source, std::vector<Pass>& passes):
-    source(source), passes(passes)
-{}
-
-Parser::Letter::Letter(Source& source, std::vector<Pass>& passes): Interface(source, passes)
-{}
-bool Parser::Letter::parse(){
-    int letter;
-    return matchRange<'a', 'z'>(source, letter) || matchRange<'A', 'Z'>(source, letter);
+template<typename T>
+static void runPassBeforeParse(T& target,std::vector<std::reference_wrapper<Parser::Pass>>& passes){
+    for(Parser::Pass& pass : passes){
+        pass.beforeParse(target);
+    }
 }
 
-Parser::Digit::Digit(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+template<typename T>
+static bool runPassAfterParse(bool result, T& target,std::vector<std::reference_wrapper<Parser::Pass>>& passes){
+    for(Parser::Pass& pass : passes){
+        pass.afterParse(target);
+    }
+    return result;
+}
+
+Parser::Interface::Interface(Source& source, std::vector<std::reference_wrapper<Pass>>& passes):
+    source(source), passes(passes), isSuccess(false)
+{}
+
+Parser::Letter::Letter(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+{}
+bool Parser::Letter::parse(){
+    runPassBeforeParse(*this, passes);
+    return runPassAfterParse(
+        (isSuccess = (matchRange<'a', 'z'>(source, letter) || matchRange<'A', 'Z'>(source, letter))),
+        *this, passes
+    );
+}
+
+Parser::Digit::Digit(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Digit::parse(){
     int digit;
     return matchRange<'0', '9'>(source, digit);
 }
 
-Parser::RelOp::RelOp(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::RelOp::RelOp(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::RelOp::parse(){
     return
@@ -99,7 +117,7 @@ bool Parser::RelOp::parse(){
         matchOne<'<'>(source);
 }
 
-Parser::Ident::Ident(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Ident::Ident(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Ident::parse(){
     if(Letter(source, passes).parse()){
@@ -109,7 +127,7 @@ bool Parser::Ident::parse(){
     return false;
 }
 
-Parser::Number::Number(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Number::Number(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Number::parse(){
     if(Digit(source, passes).parse()){
@@ -119,7 +137,7 @@ bool Parser::Number::parse(){
     return false;
 }
 
-Parser::Designator::Designator(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Designator::Designator(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Designator::parse(){
     if(Ident(source, passes).parse()){
@@ -138,7 +156,7 @@ bool Parser::Designator::parse(){
     return false;
 }
 
-Parser::Factor::Factor(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Factor::Factor(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Factor::parse(){
     if(
@@ -158,7 +176,7 @@ bool Parser::Factor::parse(){
     return false;
 }
 
-Parser::Term::Term(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Term::Term(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Term::parse(){
     if(Factor(source, passes).parse()){
@@ -173,7 +191,7 @@ bool Parser::Term::parse(){
     return false;
 }
 
-Parser::Expression::Expression(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Expression::Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Expression::parse(){
     if(Term(source, passes).parse()){
@@ -188,7 +206,7 @@ bool Parser::Expression::parse(){
     return false;
 }
 
-Parser::Relation::Relation(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Relation::Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Relation::parse(){
     if(
@@ -209,7 +227,7 @@ bool Parser::Relation::parse(){
     return false;
 }
 
-Parser::Assignment::Assignment(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Assignment::Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Assignment::parse(){
     if(
@@ -234,7 +252,7 @@ bool Parser::Assignment::parse(){
     return false;
 }
 
-Parser::FuncCall::FuncCall(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::FuncCall::FuncCall(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::FuncCall::parse(){
     if(
@@ -267,7 +285,7 @@ bool Parser::FuncCall::parse(){
     return false;
 }
 
-Parser::ReturnStatement::ReturnStatement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::ReturnStatement::ReturnStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::ReturnStatement::parse(){
     if(errorOnPartial(matchSequence<'r', 'e', 't', 'u', 'r', 'n'>(source), 6,
@@ -281,7 +299,7 @@ bool Parser::ReturnStatement::parse(){
     return false;
 }
 
-Parser::Statement::Statement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Statement::Statement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Statement::parse(){
     if(
@@ -296,7 +314,7 @@ bool Parser::Statement::parse(){
     return false;
 }
 
-Parser::StatSequence::StatSequence(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::StatSequence::StatSequence(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::StatSequence::parse(){
     if(Statement(source, passes).parse()){
@@ -310,7 +328,7 @@ bool Parser::StatSequence::parse(){
     return false;
 }
 
-Parser::IfStatement::IfStatement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::IfStatement::IfStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::IfStatement::parse(){
     if(
@@ -349,7 +367,7 @@ bool Parser::IfStatement::parse(){
     return false;
 }
 
-Parser::WhileStatement::WhileStatement(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::WhileStatement::WhileStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::WhileStatement::parse(){
     if(
@@ -378,7 +396,7 @@ bool Parser::WhileStatement::parse(){
     return false;
 }
 
-Parser::TypeDecl::TypeDecl(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::TypeDecl::TypeDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::TypeDecl::parse(){
     unsigned int varMatch = matchSequence<'v', 'a', 'r'>(source);
@@ -419,7 +437,7 @@ bool Parser::TypeDecl::parse(){
     return false;
 }
 
-Parser::VarDecl::VarDecl(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::VarDecl::VarDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::VarDecl::parse(){
     if(
@@ -445,7 +463,7 @@ bool Parser::VarDecl::parse(){
     return false;
 }
 
-Parser::FormalParam::FormalParam(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::FormalParam::FormalParam(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::FormalParam::parse(){
     if(errorOnFalse(
@@ -470,7 +488,7 @@ bool Parser::FormalParam::parse(){
     return false;
 }
 
-Parser::FuncBody::FuncBody(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::FuncBody::FuncBody(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::FuncBody::parse(){
     while(VarDecl(source, passes).parse() && skipWhiteSpaces(source));
@@ -488,7 +506,7 @@ bool Parser::FuncBody::parse(){
     return false;
 }
 
-Parser::FuncDecl::FuncDecl(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::FuncDecl::FuncDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::FuncDecl::parse(){
     errorOnPartial(matchSequence<'v', 'o', 'i', 'd'>(source), 4,
@@ -524,7 +542,7 @@ bool Parser::FuncDecl::parse(){
     return false;
 }
 
-Parser::Computation::Computation(Source& source, std::vector<Pass>& passes): Interface(source, passes)
+Parser::Computation::Computation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Computation::parse(){
     if(errorOnFalse(
