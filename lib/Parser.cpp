@@ -101,8 +101,11 @@ bool Parser::Letter::parse(){
 Parser::Digit::Digit(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Digit::parse(){
-    int digit;
-    return matchRange<'0', '9'>(source, digit);
+    runPassBeforeParse(*this, passes);
+    return runPassAfterParse(
+        (isSuccess = matchRange<'0', '9'>(source, digit)),
+        *this, passes
+    );
 }
 
 Parser::RelOp::RelOp(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

@@ -23,7 +23,6 @@ class Letter: public Interface{
 public:
     Letter(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
-
     int letter;
 };
 
@@ -31,6 +30,7 @@ class Digit: public Interface{
 public:
     Digit(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    int digit;
 };
 
 class RelOp: public Interface{
