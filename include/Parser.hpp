@@ -83,6 +83,11 @@ class Expression: public Interface{
 public:
     Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    enum class Type{
+        Plus, Minus
+    };
+    std::vector<Type> opTypes;
+    std::vector<Term> terms;
 };
 
 class Relation: public Interface{

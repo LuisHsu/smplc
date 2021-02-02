@@ -236,16 +236,24 @@ bool Parser::Term::parse(){
 Parser::Expression::Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Expression::parse(){
-    if(Term(source, passes).parse()){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    if(terms.emplace_back(source, passes).parse()){
         while(
             skipWhiteSpaces(source)
-            && (matchOne<'+'>(source) || matchOne<'-'>(source))
-            && skipWhiteSpaces(source)
-            && Term(source, passes).parse()
+            && (
+                (matchOne<'+'>(source) && (opTypes.emplace_back(Type::Plus) == Type::Plus)) ||
+                (matchOne<'-'>(source) && (opTypes.emplace_back(Type::Minus) == Type::Minus))
+            ) && skipWhiteSpaces(source)
+            && terms.emplace_back(source, passes).parse()
         );
-        return true;
+        isSuccess = true;
     }
-    return false;
+    if(!terms.back().isSuccess){
+        terms.pop_back();
+    }
+    terms.shrink_to_fit();
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Relation::Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
