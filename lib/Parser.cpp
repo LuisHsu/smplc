@@ -322,37 +322,44 @@ bool Parser::Assignment::parse(){
     )), *this, passes);
 }
 
-Parser::FuncCall::FuncCall(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::FuncCall::FuncCall(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    identifier(source, passes)
 {}
 bool Parser::FuncCall::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
     if(
         errorOnPartial(matchSequence<'c', 'a', 'l', 'l'>(source), 4,
             "expected 'call' in function call"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Ident(source, passes).parse(),
+            skipWhiteSpaces(source) && identifier.parse(),
             "expected function name in function call"
         )
     ){
         if(skipWhiteSpaces(source) && matchOne<'('>(source)){
-            if(skipWhiteSpaces(source) && Expression(source, passes).parse()){
+            Expression expr(source, passes);
+            if(skipWhiteSpaces(source) && expr.parse()){
+                expressions.emplace_back(expr);
                 while(skipWhiteSpaces(source) && matchOne<','>(source)){
-                    if(!errorOnFalse(
-                        skipWhiteSpaces(source) && Expression(source, passes).parse(),
+                    if(errorOnFalse(
+                        skipWhiteSpaces(source) && expr.parse(),
                         "expected expression after ',' in function arguments"
                     )){
-                        return false;
+                        expressions.emplace_back(expr);
+                    }else{
+                        return runPassAfterParse((isSuccess = false), *this, passes);
                     }
                 };
             }
-            return errorOnFalse(
+            return runPassAfterParse((isSuccess = errorOnFalse(
                 skipWhiteSpaces(source) && matchOne<')'>(source),
                 "expected ')' after function arguments"
-            );
+            )), *this, passes);
         }
-        return true;
+        isSuccess = true;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::ReturnStatement::ReturnStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
