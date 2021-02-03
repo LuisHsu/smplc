@@ -297,15 +297,18 @@ bool Parser::Relation::parse(){
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::Assignment::Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::Assignment::Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    designator(source, passes), expression(source, passes)
 {}
 bool Parser::Assignment::parse(){
-    if(
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    return runPassAfterParse((isSuccess = (
         errorOnPartial(matchSequence<'l', 'e', 't'>(source), 3,
             "expected 'let' in assignment"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Designator(source, passes).parse(),
+            skipWhiteSpaces(source) && designator.parse(),
             "expected designator in assignment"
         )
         && errorOnFalse(
@@ -313,13 +316,10 @@ bool Parser::Assignment::parse(){
             "expected '<-' in assignment"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Expression(source, passes).parse(),
+            skipWhiteSpaces(source) && expression.parse(),
             "expected expression in assignment"
         )
-    ){
-        return true;
-    }
-    return false;
+    )), *this, passes);
 }
 
 Parser::FuncCall::FuncCall(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

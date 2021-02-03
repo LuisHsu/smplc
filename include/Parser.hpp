@@ -70,12 +70,6 @@ public:
     std::vector<Expression> expressions;
 };
 
-class Assignment: public Interface{
-public:
-    Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
-    bool parse();
-};
-
 class FuncCall: public Interface{
 public:
     FuncCall(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
@@ -90,6 +84,15 @@ public:
         None, Plus, Minus
     };
     std::vector<std::pair<Type, Term>> terms;
+};
+
+class Assignment: public Interface{
+public:
+    Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
+    bool parse();
+
+    Designator designator;
+    Expression expression;
 };
 
 class Relation: public Interface{
