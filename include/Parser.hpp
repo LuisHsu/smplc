@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <utility>
 #include <functional>
 #include <variant>
 #include <Source.hpp>
@@ -69,12 +70,6 @@ public:
     std::vector<Expression> expressions;
 };
 
-class Relation: public Interface{
-public:
-    Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
-    bool parse();
-};
-
 class Assignment: public Interface{
 public:
     Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
@@ -92,10 +87,18 @@ public:
     Expression(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
     enum class Type{
-        Plus, Minus
+        None, Plus, Minus
     };
-    std::vector<Type> opTypes;
-    std::vector<Term> terms;
+    std::vector<std::pair<Type, Term>> terms;
+};
+
+class Relation: public Interface{
+public:
+    Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
+    bool parse();
+
+    RelOp::Type opType;
+    Expression leftExpr, rightExpr;
 };
 
 class Factor: public Interface{
@@ -113,10 +116,9 @@ public:
     bool parse();
 
     enum class Type{
-        Times, Divide
+        None, Times, Divide
     };
-    std::vector<Type> opTypes;
-    std::vector<Factor> factors;
+    std::vector<std::pair<Type, Factor>> factors;
 };
 
 class ReturnStatement: public Interface{

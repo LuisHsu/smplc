@@ -226,19 +226,21 @@ Parser::Term::Term(Source& source, std::vector<std::reference_wrapper<Pass>>& pa
 bool Parser::Term::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
-    if(factors.emplace_back(source, passes).parse()){
+    Factor factor(source, passes);
+    if(factor.parse()){
+        Type opType = Type::None;
+        factors.emplace_back(opType, factor);
         while(
             skipWhiteSpaces(source)
             && (
-                (matchOne<'*'>(source) && (opTypes.emplace_back(Type::Times) == Type::Times)) ||
-                (matchOne<'/'>(source) && (opTypes.emplace_back(Type::Divide) == Type::Divide))
+                (matchOne<'*'>(source) && (opType = Type::Times) == Type::Times) ||
+                (matchOne<'/'>(source) && (opType = Type::Divide) == Type::Divide)
             ) && skipWhiteSpaces(source)
-            && factors.emplace_back(source, passes).parse()
-        );
+            && factor.parse()
+        ){
+            factors.emplace_back(opType, factor);
+        }
         isSuccess = true;
-    }
-    if(!factors.back().isSuccess){
-        factors.pop_back();
     }
     factors.shrink_to_fit();
     return runPassAfterParse(isSuccess, *this, passes);
@@ -249,43 +251,50 @@ Parser::Expression::Expression(Source& source, std::vector<std::reference_wrappe
 bool Parser::Expression::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
-    if(terms.emplace_back(source, passes).parse()){
+    Term term(source, passes);
+    if(term.parse()){
+        Type opType = Type::None;
+        terms.emplace_back(opType, term);
         while(
             skipWhiteSpaces(source)
             && (
-                (matchOne<'+'>(source) && (opTypes.emplace_back(Type::Plus) == Type::Plus)) ||
-                (matchOne<'-'>(source) && (opTypes.emplace_back(Type::Minus) == Type::Minus))
+                (matchOne<'+'>(source) && (opType = Type::Plus) == Type::Plus) ||
+                (matchOne<'-'>(source) && (opType = Type::Minus) == Type::Minus)
             ) && skipWhiteSpaces(source)
-            && terms.emplace_back(source, passes).parse()
-        );
+            && term.parse()
+        ){
+            terms.emplace_back(opType, term);
+        }
         isSuccess = true;
-    }
-    if(!terms.back().isSuccess){
-        terms.pop_back();
     }
     terms.shrink_to_fit();
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::Relation::Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::Relation::Relation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    leftExpr(source, passes), rightExpr(source, passes)
 {}
 bool Parser::Relation::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    RelOp relOp(source, passes);
     if(
-        errorOnFalse(Expression(source, passes).parse(),
+        errorOnFalse(leftExpr.parse(),
             "expected left expression in relation"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && RelOp(source, passes).parse(),
+            skipWhiteSpaces(source) && relOp.parse(),
             "expected relation operator in relation"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Expression(source, passes).parse(),
+            skipWhiteSpaces(source) && rightExpr.parse(),
             "expected right expression in relation"
         )
     ){
-        return true;
+        isSuccess = true;
+        opType = relOp.opType;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Assignment::Assignment(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
