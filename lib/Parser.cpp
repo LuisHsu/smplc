@@ -447,33 +447,34 @@ bool Parser::IfStatement::parse(){
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::WhileStatement::WhileStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::WhileStatement::WhileStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    relation(source, passes), statements(source, passes)
 {}
 bool Parser::WhileStatement::parse(){
-    if(
-        errorOnPartial(matchSequence<'w', 'h', 'i', 'l', 'e'>(source), 5,
-            "expected 'while' in while statement"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && Relation(source, passes).parse(),
-            "expected relation operator in while statement"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && (matchSequence<'d', 'o'>(source) == 2),
-            "expected 'do' before while statement body"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
-            "no while statement body"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source)&& (matchSequence<'o', 'd'>(source) == 2),
-            "expected 'od' after while statement body"
-        )
-    ){
-        return true;
-    }
-    return false;
+    runPassBeforeParse(*this, passes);
+    return runPassAfterParse((
+        isSuccess = (
+            errorOnPartial(matchSequence<'w', 'h', 'i', 'l', 'e'>(source), 5,
+                "expected 'while' in while statement"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && relation.parse(),
+                "expected relation operator in while statement"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && (matchSequence<'d', 'o'>(source) == 2),
+                "expected 'do' before while statement body"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && statements.parse(),
+                "no while statement body"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source)&& (matchSequence<'o', 'd'>(source) == 2),
+                "expected 'od' after while statement body"
+            )
+        )),
+    *this, passes);
 }
 
 Parser::TypeDecl::TypeDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

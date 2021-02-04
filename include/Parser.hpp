@@ -160,6 +160,9 @@ class WhileStatement: public Interface{
 public:
     WhileStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    Relation relation;
+    StatSequence statements;
 };
 
 class TypeDecl: public Interface{
