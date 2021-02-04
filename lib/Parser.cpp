@@ -381,16 +381,20 @@ bool Parser::ReturnStatement::parse(){
 Parser::Statement::Statement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::Statement::parse(){
+    runPassBeforeParse(*this, passes);
     if(
-        Assignment(source, passes).parse()
-        || FuncCall(source, passes).parse()
-        || ReturnStatement(source, passes).parse()
-        || IfStatement(source, passes).parse()
-        || WhileStatement(source, passes).parse()
+        value.emplace<Assignment>(source, passes).parse() ||
+        value.emplace<FuncCall>(source, passes).parse() || 
+        value.emplace<ReturnStatement>(source, passes).parse() ||
+        value.emplace<IfStatement>(source, passes).parse() ||
+        value.emplace<WhileStatement>(source, passes).parse()
     ){
-        return true;
+        isSuccess = true;
+    }else{
+        isSuccess = false;
+        value.emplace<std::monostate>();
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::StatSequence::StatSequence(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

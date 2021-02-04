@@ -14,6 +14,7 @@ namespace Parser{
 class Pass;
 class Expression;
 class Term;
+class Statement;
 
 class Interface{
 public:
@@ -136,12 +137,6 @@ public:
     Expression expression;
 };
 
-class Statement: public Interface{
-public:
-    Statement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
-    bool parse();
-};
-
 class StatSequence: public Interface{
 public:
     StatSequence(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
@@ -165,6 +160,22 @@ public:
 
     Relation relation;
     StatSequence statements;
+};
+
+class Statement: public Interface{
+public:
+    Statement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
+    bool parse();
+
+    using ValueType = std::variant<
+        std::monostate,
+        Assignment,
+        FuncCall,
+        IfStatement,
+        WhileStatement,
+        ReturnStatement
+    >;
+    ValueType value;
 };
 
 class TypeDecl: public Interface{
