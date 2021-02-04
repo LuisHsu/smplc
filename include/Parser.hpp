@@ -141,6 +141,8 @@ class StatSequence: public Interface{
 public:
     StatSequence(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    std::vector<Statement> statements;
 };
 
 class IfStatement: public Interface{

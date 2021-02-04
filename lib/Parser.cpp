@@ -400,15 +400,20 @@ bool Parser::Statement::parse(){
 Parser::StatSequence::StatSequence(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::StatSequence::parse(){
-    if(Statement(source, passes).parse()){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    Statement stmt(source, passes);
+    if(stmt.parse()){
+        statements.push_back(stmt);
         while(skipWhiteSpaces(source) && matchOne<';'>(source)){
-            if(skipWhiteSpaces(source) && Statement(source, passes).parse()){
-                
+            skipWhiteSpaces(source);
+            if(stmt.parse()){
+                statements.push_back(stmt);
             }
         }
-        return true;
+        isSuccess = true;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::IfStatement::IfStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
