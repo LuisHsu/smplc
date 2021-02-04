@@ -362,18 +362,20 @@ bool Parser::FuncCall::parse(){
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::ReturnStatement::ReturnStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::ReturnStatement::ReturnStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    expression(source, passes)
 {}
 bool Parser::ReturnStatement::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
     if(errorOnPartial(matchSequence<'r', 'e', 't', 'u', 'r', 'n'>(source), 6,
         "expected 'return' in return statement"
     )){
-        if(skipWhiteSpaces(source) && Expression(source, passes).parse()){
-            return true;
-        }
-        return true;
+        skipWhiteSpaces(source);
+        expression.parse();
+        isSuccess = true;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::Statement::Statement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

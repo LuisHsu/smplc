@@ -132,6 +132,8 @@ class ReturnStatement: public Interface{
 public:
     ReturnStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    Expression expression;
 };
 
 class Statement: public Interface{
