@@ -6,6 +6,7 @@
 #include <utility>
 #include <functional>
 #include <variant>
+#include <optional>
 #include <Source.hpp>
 
 namespace Parser{
@@ -149,6 +150,10 @@ class IfStatement: public Interface{
 public:
     IfStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    Relation relation;
+    StatSequence thenStat;
+    std::optional<StatSequence> elseStat;
 };
 
 class WhileStatement: public Interface{

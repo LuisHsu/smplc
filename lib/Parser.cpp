@@ -405,15 +405,18 @@ bool Parser::StatSequence::parse(){
     return false;
 }
 
-Parser::IfStatement::IfStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::IfStatement::IfStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    relation(source, passes), thenStat(source, passes)
 {}
 bool Parser::IfStatement::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
     if(
         errorOnPartial(matchSequence<'i', 'f'>(source), 2,
             "expected 'if' in if statement"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Relation(source, passes).parse(),
+            skipWhiteSpaces(source) && relation.parse(),
             "expected relation in if statement"
         )
         && errorOnFalse(
@@ -421,27 +424,27 @@ bool Parser::IfStatement::parse(){
             "expected 'then' before if statement body"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
+            skipWhiteSpaces(source) && thenStat.parse(),
             "no if statement body"
         )
     ){
-        if(
-            skipWhiteSpaces(source) && errorOnPartial(matchSequence<'e', 'l', 's', 'e'>(source), 4,
-                "expected 'else' in else statement"
-            )
-            && errorOnFalse(
-                skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
+        if(skipWhiteSpaces(source) && errorOnPartial(matchSequence<'e', 'l', 's', 'e'>(source), 4,
+            "expected 'else' in else statement"
+        )){
+            if(!errorOnFalse(
+                skipWhiteSpaces(source) && elseStat.emplace(source, passes).parse(),
                 "no else statement body"
-            )
-        ){
-
+            )){
+                isSuccess = false;
+                return runPassAfterParse(isSuccess, *this, passes);
+            }
         }
-        return errorOnFalse(
+        isSuccess = errorOnFalse(
             skipWhiteSpaces(source) && (matchSequence<'f', 'i'>(source) == 2),
             "expected 'fi' after if statement"
         );
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::WhileStatement::WhileStatement(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
