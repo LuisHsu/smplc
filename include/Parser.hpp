@@ -232,6 +232,10 @@ class Computation: public Interface{
 public:
     Computation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    std::vector<VarDecl> varDecls;
+    std::vector<FuncDecl> funcDecls;
+    StatSequence statement;
 };
 
 class Pass{

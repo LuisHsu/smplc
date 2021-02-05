@@ -671,22 +671,33 @@ bool Parser::FuncDecl::parse(){
     );
 }
 
-Parser::Computation::Computation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::Computation::Computation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    statement(source, passes)
 {}
 bool Parser::Computation::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
     if(errorOnFalse(
         skipWhiteSpaces(source) && (matchSequence<'m', 'a', 'i', 'n'>(source) == 4),
         "expected 'main' in the begin of computation"
     )){
-        while(skipWhiteSpaces(source) && VarDecl(source, passes).parse());
-        while(skipWhiteSpaces(source) && FuncDecl(source, passes).parse());
-        if(
+        VarDecl varDecl(source, passes);
+        while(skipWhiteSpaces(source) && varDecl.parse()){
+            varDecls.push_back(varDecl);
+        }
+        varDecls.shrink_to_fit();
+        FuncDecl funcDecl(source, passes);
+        while(skipWhiteSpaces(source) && funcDecl.parse()){
+            funcDecls.push_back(funcDecl);
+        }
+        funcDecls.shrink_to_fit();
+        isSuccess = 
             errorOnFalse(
                 skipWhiteSpaces(source) && matchOne<'{'>(source), 
                 "expected '{' before computation body"
             )
             && errorOnFalse(
-                skipWhiteSpaces(source) && StatSequence(source, passes).parse(),
+                skipWhiteSpaces(source) && statement.parse(),
                 "no statements in computation body"
             )
             && errorOnFalse(
@@ -696,12 +707,9 @@ bool Parser::Computation::parse(){
             && errorOnFalse(
                 skipWhiteSpaces(source) && matchOne<'.'>(source),
                 "expected '.' in the end of computation"
-            )
-        ){
-            return true;
-        }
+            );
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 void Parser::Pass::beforeParse(Letter&){}

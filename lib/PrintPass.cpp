@@ -244,3 +244,19 @@ void PrintPass::afterParse(Parser::FuncDecl& target){
         std::cout << ": " << target.identifier.identifier << std::endl;
     }
 }
+
+void PrintPass::afterParse(Parser::Computation& target){
+    if(target.isSuccess){
+        std::cout << "Computation: variable - ";
+        for(Parser::VarDecl& varDecl: target.varDecls){
+            for(Parser::Ident& ident: varDecl.identifiers){
+                std::cout << ident.identifier << " ";
+            }
+        }
+        std::cout << "; function - ";
+        for(Parser::FuncDecl& funcDecl: target.funcDecls){
+            std::cout << funcDecl.identifier.identifier << " ";
+        }
+        std::cout << std::endl;
+    }
+}

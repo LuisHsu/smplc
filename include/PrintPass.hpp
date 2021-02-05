@@ -25,6 +25,7 @@ public:
     void afterParse(Parser::FormalParam&);
     void afterParse(Parser::FuncBody&);
     void afterParse(Parser::FuncDecl&);
+    void afterParse(Parser::Computation&);
 };
 
 #endif
