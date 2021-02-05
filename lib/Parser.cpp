@@ -491,11 +491,17 @@ bool Parser::WhileStatement::parse(){
 Parser::TypeDecl::TypeDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::TypeDecl::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
     unsigned int varMatch = matchSequence<'v', 'a', 'r'>(source);
+    Number arrSize(source, passes);
     if(varMatch >= 2){
-        return errorOnFalse(varMatch == 3,
+        if(errorOnFalse(varMatch == 3,
             "expected 'var' in type declaration"
-        );
+        )){
+            isSuccess = true;
+            declType = Type::Variable;
+        }
     }else if(
         errorOnPartial(matchSequence<'a', 'r', 'r', 'a', 'y'>(source), 5,
             "expected 'array' in type declaration"
@@ -505,7 +511,7 @@ bool Parser::TypeDecl::parse(){
             "expected '[' in array type declaration"
         )
         && errorOnFalse(
-            skipWhiteSpaces(source) && Number(source, passes).parse(),
+            skipWhiteSpaces(source) && arrSize.parse(),
             "expected number in array type declaration"
         )
         && errorOnFalse(
@@ -513,20 +519,24 @@ bool Parser::TypeDecl::parse(){
             "expected ']' in array type declaration"
         )
     ){
+        arraySizes.push_back(arrSize);
         while(
             skipWhiteSpaces(source) && matchOne<'['>(source)
             && errorOnFalse(
-                skipWhiteSpaces(source) && Number(source, passes).parse(),
+                skipWhiteSpaces(source) && arrSize.parse(),
                 "expected number in array type declaration"
             )
             && errorOnFalse(
                 skipWhiteSpaces(source) && matchOne<']'>(source),
                 "expected ']' in array type declaration"
             )
-        );
-        return true;
+        ){
+            arraySizes.push_back(arrSize);
+        }
+        isSuccess = true;
+        declType = Type::Array;
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::VarDecl::VarDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

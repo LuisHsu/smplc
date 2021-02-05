@@ -184,6 +184,11 @@ class TypeDecl: public Interface{
 public:
     TypeDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+    enum class Type{
+        None, Variable, Array
+    };
+    Type declType;
+    std::vector<Number> arraySizes;
 };
 
 class VarDecl: public Interface{
