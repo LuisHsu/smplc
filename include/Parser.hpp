@@ -212,6 +212,9 @@ class FuncBody: public Interface{
 public:
     FuncBody(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    std::vector<VarDecl> varDecls;
+    std::optional<StatSequence> statSequence;
 };
 
 class FuncDecl: public Interface{

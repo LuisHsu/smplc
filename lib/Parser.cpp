@@ -596,6 +596,7 @@ bool Parser::FormalParam::parse(){
             ){
                 identifiers.push_back(identifier);
             }
+            identifiers.shrink_to_fit();
         }
         isSuccess = errorOnFalse(
             skipWhiteSpaces(source) && matchOne<')'>(source),
@@ -608,19 +609,26 @@ bool Parser::FormalParam::parse(){
 Parser::FuncBody::FuncBody(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::FuncBody::parse(){
-    while(VarDecl(source, passes).parse() && skipWhiteSpaces(source));
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    VarDecl varDecl(source, passes);
+    while(varDecl.parse() && skipWhiteSpaces(source)){
+        varDecls.push_back(varDecl);
+    }
+    varDecls.shrink_to_fit();
     if(errorOnFalse(
         matchOne<'{'>(source) && skipWhiteSpaces(source),
         "expected '{' before function body"
     )){
-        if(StatSequence(source, passes).parse()){
-        }
-        return errorOnFalse(
+        if(!statSequence.emplace(source, passes).parse()){
+            statSequence.reset();
+        };
+        isSuccess = errorOnFalse(
             skipWhiteSpaces(source) && matchOne<'}'>(source),
             "expected '}' after function body"
         );
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::FuncDecl::FuncDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

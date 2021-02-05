@@ -1,9 +1,9 @@
 main
 void function testFunc1(); {};
-void function testFunc2(); {
+function testFunc2(); {
     return 1;
 };
-void function testFunc3(); var loc1; {};
+function testFunc3(); var loc1; {};
 {
     return 0;
 }.

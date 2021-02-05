@@ -6,14 +6,17 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <optional>
 #include <functional>
 
 #include <Source.hpp>
 #include <Exception.hpp>
 #include <Parser.hpp>
 #include <Logger.hpp>
+#include <PrintPass.hpp>
 
 #include "ColorPrint.hpp"
+#include "ArgParse.hpp"
 
 void printLogs(){
     Logger::dump([](LogLevel level, std::string msg){
@@ -33,15 +36,16 @@ void printLogs(){
 
 int main(int argc, char const *argv[]){
     // Check argument
-    if(argc < 2){
+    ArgParse arguments(argc, argv);
+    if(arguments.inputFiles.size() < 1){
         ColorPrint::fatal("no input file");
         return -1;
-    }else if(argc > 2){
+    }else if(arguments.inputFiles.size() > 1){
         ColorPrint::fatal("only support one input file now");
         return -1;
     }
     // Create source instance
-    std::ifstream fileIn(argv[1]);
+    std::ifstream fileIn(arguments.inputFiles[0]);
     if(!fileIn.is_open()){
         ColorPrint::fatal("can't open input file");
         return -1;
@@ -50,6 +54,10 @@ int main(int argc, char const *argv[]){
 
     // Create parser passes
     std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
+    std::optional<PrintPass> printPass;
+    if(arguments.parserDebug){
+        parserPasses.emplace_back(printPass.emplace());
+    }
 
     // Parse
     try{

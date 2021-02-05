@@ -3,4 +3,5 @@ add_library(smplc
     Exception.cpp
     Parser.cpp
     Logger.cpp
+    PrintPass.cpp
 )
