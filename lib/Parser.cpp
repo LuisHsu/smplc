@@ -535,34 +535,43 @@ bool Parser::TypeDecl::parse(){
         }
         isSuccess = true;
         declType = Type::Array;
+        arraySizes.shrink_to_fit();
     }
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::VarDecl::VarDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::VarDecl::VarDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    typeDecl(source, passes)
 {}
 bool Parser::VarDecl::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    Ident identifier(source, passes);
     if(
-        TypeDecl(source, passes).parse()
+        typeDecl.parse()
         && errorOnFalse(
-            skipWhiteSpaces(source) && Ident(source, passes).parse(),
+            skipWhiteSpaces(source) && identifier.parse(),
             "expected identifier in variable declaration"
         )
     ){
+        identifiers.push_back(identifier);
         while(
             skipWhiteSpaces(source)
             && matchOne<','>(source)
             && errorOnFalse(
-                skipWhiteSpaces(source) && Ident(source, passes).parse(),
+                skipWhiteSpaces(source) && identifier.parse(),
                 "expected identifier in variable declaration"
             )
-        );
-        return errorOnFalse(
+        ){
+            identifiers.push_back(identifier);
+        }
+        identifiers.shrink_to_fit();
+        isSuccess = errorOnFalse(
             skipWhiteSpaces(source) && matchOne<';'>(source),
             "expected ';' after variable declaration"
         );
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::FormalParam::FormalParam(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

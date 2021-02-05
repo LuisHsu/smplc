@@ -195,6 +195,9 @@ class VarDecl: public Interface{
 public:
     VarDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    TypeDecl typeDecl;
+    std::vector<Ident> identifiers;
 };
 
 class FormalParam: public Interface{
