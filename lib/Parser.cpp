@@ -577,26 +577,32 @@ bool Parser::VarDecl::parse(){
 Parser::FormalParam::FormalParam(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
 {}
 bool Parser::FormalParam::parse(){
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
     if(errorOnFalse(
         matchOne<'('>(source) && skipWhiteSpaces(source),
         "expected '(' before formal parameters"
     )){
-        if(Ident(source, passes).parse()){
+        Ident identifier(source, passes);
+        if(identifier.parse()){
+            identifiers.push_back(identifier);
             while(
                 skipWhiteSpaces(source)
                 && matchOne<','>(source)
                 && errorOnFalse(
-                    skipWhiteSpaces(source) && Ident(source, passes).parse(),
+                    skipWhiteSpaces(source) && identifier.parse(),
                     "expected identifier after ',' in formal parameters"
                 )
-            );
+            ){
+                identifiers.push_back(identifier);
+            }
         }
-        return errorOnFalse(
+        isSuccess = errorOnFalse(
             skipWhiteSpaces(source) && matchOne<')'>(source),
             "expected ')' after formal parameters"
         );
     }
-    return false;
+    return runPassAfterParse(isSuccess, *this, passes);
 }
 
 Parser::FuncBody::FuncBody(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

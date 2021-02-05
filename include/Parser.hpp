@@ -204,6 +204,8 @@ class FormalParam: public Interface{
 public:
     FormalParam(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    std::vector<Ident> identifiers;
 };
 
 class FuncBody: public Interface{
