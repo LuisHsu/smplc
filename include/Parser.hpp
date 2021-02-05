@@ -221,6 +221,11 @@ class FuncDecl: public Interface{
 public:
     FuncDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
+
+    bool isVoid;
+    Ident identifier;
+    FormalParam parameter;
+    FuncBody body;
 };
 
 class Computation: public Interface{

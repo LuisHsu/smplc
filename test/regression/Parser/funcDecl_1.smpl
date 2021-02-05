@@ -2,7 +2,7 @@ main
 void function testFunc1();{
     call OutputNewLine;
 };
-function testFunc1();{
+function testFunc2();{
     return 0;
 };
 {

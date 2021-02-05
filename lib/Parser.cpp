@@ -631,40 +631,44 @@ bool Parser::FuncBody::parse(){
     return runPassAfterParse(isSuccess, *this, passes);
 }
 
-Parser::FuncDecl::FuncDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)
+Parser::FuncDecl::FuncDecl(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes),
+    isVoid(false), identifier(source, passes), parameter(source, passes), body(source, passes)
 {}
 bool Parser::FuncDecl::parse(){
-    errorOnPartial(matchSequence<'v', 'o', 'i', 'd'>(source), 4,
+    runPassBeforeParse(*this, passes);
+    isSuccess = false;
+    isVoid = errorOnPartial(matchSequence<'v', 'o', 'i', 'd'>(source), 4,
         "expected 'void' in void function"
     );
-    if(skipWhiteSpaces(source) && 
-        errorOnPartial(matchSequence<'f','u','n','c','t','i','o','n'>(source), 8,
-            "expected 'function' in function declaration"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && Ident(source, passes).parse(),
-            "expected identifier in function signature"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && FormalParam(source, passes).parse(),
-            "expected formal parameter in function signature"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && matchOne<';'>(source),
-            "expected ';' after function signature"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && FuncBody(source, passes).parse(),
-            "no function body"
-        )
-        && errorOnFalse(
-            skipWhiteSpaces(source) && matchOne<';'>(source),
-            "expected ';' after function declaration"
-        )
-    ){
-        return true;
-    }
-    return false;
+    return runPassAfterParse((isSuccess = 
+        (
+            skipWhiteSpaces(source)
+            && errorOnPartial(matchSequence<'f','u','n','c','t','i','o','n'>(source), 8,
+                "expected 'function' in function declaration"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && identifier.parse(),
+                "expected identifier in function signature"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && parameter.parse(),
+                "expected formal parameter in function signature"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<';'>(source),
+                "expected ';' after function signature"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && body.parse(),
+                "no function body"
+            )
+            && errorOnFalse(
+                skipWhiteSpaces(source) && matchOne<';'>(source),
+                "expected ';' after function declaration"
+            )
+        )),
+        *this, passes
+    );
 }
 
 Parser::Computation::Computation(Source& source, std::vector<std::reference_wrapper<Pass>>& passes): Interface(source, passes)

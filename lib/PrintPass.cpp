@@ -234,3 +234,13 @@ void PrintPass::afterParse(Parser::FuncBody& target){
         std::cout << std::endl;
     }
 }
+
+void PrintPass::afterParse(Parser::FuncDecl& target){
+    if(target.isSuccess){
+        std::cout << "FuncDecl";
+        if(target.isVoid){
+            std::cout << " (void)";
+        }
+        std::cout << ": " << target.identifier.identifier << std::endl;
+    }
+}
