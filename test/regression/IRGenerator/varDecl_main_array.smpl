@@ -1,0 +1,7 @@
+main
+array[5] id1;
+array[6][4] id2, id3;
+array[4][2][6] id4;
+{
+    return 0;
+}.

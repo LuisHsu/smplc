@@ -179,6 +179,7 @@ Parser::Designator::Designator(Source& source, std::vector<std::reference_wrappe
 bool Parser::Designator::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    expressions.clear();
     if(identifier.parse()){
         while(skipWhiteSpaces(source) && matchOne<'['>(source)){
             Expression expression(source, passes);
@@ -226,6 +227,7 @@ Parser::Term::Term(Source& source, std::vector<std::reference_wrapper<Pass>>& pa
 bool Parser::Term::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    factors.clear();
     Factor factor(source, passes);
     if(factor.parse()){
         Type opType = Type::None;
@@ -251,6 +253,7 @@ Parser::Expression::Expression(Source& source, std::vector<std::reference_wrappe
 bool Parser::Expression::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    terms.clear();
     Term term(source, passes);
     if(term.parse()){
         Type opType = Type::None;
@@ -328,6 +331,7 @@ Parser::FuncCall::FuncCall(Source& source, std::vector<std::reference_wrapper<Pa
 bool Parser::FuncCall::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    expressions.clear();
     if(
         errorOnPartial(matchSequence<'c', 'a', 'l', 'l'>(source), 4,
             "expected 'call' in function call"
@@ -402,6 +406,7 @@ Parser::StatSequence::StatSequence(Source& source, std::vector<std::reference_wr
 bool Parser::StatSequence::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    statements.clear();
     Statement stmt(source, passes);
     if(stmt.parse()){
         statements.push_back(stmt);
@@ -493,6 +498,7 @@ Parser::TypeDecl::TypeDecl(Source& source, std::vector<std::reference_wrapper<Pa
 bool Parser::TypeDecl::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    arraySizes.clear();
     unsigned int varMatch = matchSequence<'v', 'a', 'r'>(source);
     Number arrSize(source, passes);
     if(varMatch >= 2){
@@ -546,6 +552,7 @@ Parser::VarDecl::VarDecl(Source& source, std::vector<std::reference_wrapper<Pass
 bool Parser::VarDecl::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    identifiers.clear();
     Ident identifier(source, passes);
     if(
         typeDecl.parse()
@@ -579,6 +586,7 @@ Parser::FormalParam::FormalParam(Source& source, std::vector<std::reference_wrap
 bool Parser::FormalParam::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    identifiers.clear();
     if(errorOnFalse(
         matchOne<'('>(source) && skipWhiteSpaces(source),
         "expected '(' before formal parameters"
@@ -611,6 +619,7 @@ Parser::FuncBody::FuncBody(Source& source, std::vector<std::reference_wrapper<Pa
 bool Parser::FuncBody::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    varDecls.clear();
     VarDecl varDecl(source, passes);
     while(varDecl.parse() && skipWhiteSpaces(source)){
         varDecls.push_back(varDecl);
@@ -677,6 +686,8 @@ Parser::Computation::Computation(Source& source, std::vector<std::reference_wrap
 bool Parser::Computation::parse(){
     runPassBeforeParse(*this, passes);
     isSuccess = false;
+    varDecls.clear();
+    funcDecls.clear();
     if(errorOnFalse(
         skipWhiteSpaces(source) && (matchSequence<'m', 'a', 'i', 'n'>(source) == 4),
         "expected 'main' in the begin of computation"

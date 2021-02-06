@@ -4,4 +4,5 @@ add_library(smplc
     Parser.cpp
     Logger.cpp
     PrintPass.cpp
+    IRGeneratorPass.cpp
 )

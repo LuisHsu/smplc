@@ -1,0 +1,6 @@
+main
+var id1;
+var id2, id3;
+{
+    return 0;
+}.

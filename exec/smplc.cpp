@@ -14,6 +14,7 @@
 #include <Parser.hpp>
 #include <Logger.hpp>
 #include <PrintPass.hpp>
+#include <IRGeneratorPass.hpp>
 
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
@@ -58,6 +59,8 @@ int main(int argc, char const *argv[]){
     if(arguments.parserDebug){
         parserPasses.emplace_back(printPass.emplace());
     }
+    IRGeneratorPass irGeneratorPass;
+    parserPasses.push_back(irGeneratorPass);
 
     // Parse
     try{
