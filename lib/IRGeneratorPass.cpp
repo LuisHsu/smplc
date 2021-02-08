@@ -29,3 +29,19 @@ void IRGeneratorPass::afterParse(Parser::VarDecl& target){
         }
     }
 }
+
+void IRGeneratorPass::beforeParse(Parser::StatSequence&){
+    bbStack.emplace();
+}
+
+void IRGeneratorPass::afterParse(Parser::StatSequence& target){
+    if(!target.isSuccess){
+        bbStack.pop();
+    }
+}
+
+void IRGeneratorPass::afterParse(Parser::Factor& target){
+    if(!target.isSuccess){
+        
+    }
+}

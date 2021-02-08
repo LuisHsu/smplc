@@ -3,10 +3,15 @@
 
 #include <variant>
 #include <vector>
+#include <memory>
+#include <cstdint>
 
 namespace IR{
 
 using index_t = unsigned long long int;
+using const_t = int32_t;
+
+using Operand = std::variant<index_t, const_t>;
 
 enum class Operation{
     Neg,
@@ -33,7 +38,7 @@ enum class Operation{
 };
 
 struct InstrBase{
-    index_t index;
+    Operand index;
 };
 
 
@@ -55,26 +60,26 @@ struct Instr<op, T1, T2>: public InstrBase{
     T2 operand2;
 };
 
-using Neg = Instr<Operation::Neg, index_t>;
-using Add = Instr<Operation::Add, index_t, index_t>;
-using Sub = Instr<Operation::Sub, index_t, index_t>;
-using Mul = Instr<Operation::Mul, index_t, index_t>;
-using Div = Instr<Operation::Div, index_t, index_t>;
-using Cmp = Instr<Operation::Cmp, index_t, index_t>;
-using Adda = Instr<Operation::Adda, index_t, index_t>;
-using Load = Instr<Operation::Load, index_t>;
-using Store = Instr<Operation::Store, index_t, index_t>;
-using Phi = Instr<Operation::Phi, index_t, index_t>;
+using Neg = Instr<Operation::Neg, Operand>;
+using Add = Instr<Operation::Add, Operand, Operand>;
+using Sub = Instr<Operation::Sub, Operand, Operand>;
+using Mul = Instr<Operation::Mul, Operand, Operand>;
+using Div = Instr<Operation::Div, Operand, Operand>;
+using Cmp = Instr<Operation::Cmp, Operand, Operand>;
+using Adda = Instr<Operation::Adda, Operand, Operand>;
+using Load = Instr<Operation::Load, Operand>;
+using Store = Instr<Operation::Store, Operand, Operand>;
+using Phi = Instr<Operation::Phi, Operand, Operand>;
 using End = Instr<Operation::End>;
-using Bra = Instr<Operation::Bra, index_t>;
-using Bne = Instr<Operation::Bne, index_t, index_t>;
-using Beq = Instr<Operation::Beq, index_t, index_t>;
-using Ble = Instr<Operation::Ble, index_t, index_t>;
-using Blt = Instr<Operation::Blt, index_t, index_t>;
-using Bge = Instr<Operation::Bge, index_t, index_t>;
-using Bgt = Instr<Operation::Bgt, index_t, index_t>;
+using Bra = Instr<Operation::Bra, Operand>;
+using Bne = Instr<Operation::Bne, Operand, Operand>;
+using Beq = Instr<Operation::Beq, Operand, Operand>;
+using Ble = Instr<Operation::Ble, Operand, Operand>;
+using Blt = Instr<Operation::Blt, Operand, Operand>;
+using Bge = Instr<Operation::Bge, Operand, Operand>;
+using Bgt = Instr<Operation::Bgt, Operand, Operand>;
 using Read = Instr<Operation::Read>;
-using Write = Instr<Operation::Write, index_t>;
+using Write = Instr<Operation::Write, Operand>;
 using WriteNL = Instr<Operation::WriteNL>;
 
 using Instrction = std::variant<
@@ -103,6 +108,7 @@ using Instrction = std::variant<
 
 struct BasicBlock{
     std::vector<Instrction> instructions;
+    std::shared_ptr<BasicBlock> direct, fall;
 };
 
 
