@@ -38,6 +38,7 @@ enum class Operation{
 
 struct InstrBase{
     index_t index;
+    InstrBase();
 };
 
 
@@ -112,6 +113,8 @@ using Instrction = std::variant<
     Write,
     WriteNL
 >;
+
+const index_t getInstrIndex(const Instrction&);
 
 struct BasicBlock{
     std::vector<Instrction> instructions;

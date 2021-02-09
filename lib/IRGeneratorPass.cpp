@@ -43,13 +43,29 @@ void IRGeneratorPass::afterParse(Parser::StatSequence& target){
     }
 }
 
+void IRGeneratorPass::afterParse(Parser::Expression& target){
+    if(target.isSuccess){
+        exprIndexStack.push(IR::getInstrIndex(bbStack.top().instructions.back()));
+    }
+}
+
 void IRGeneratorPass::afterParse(Parser::Factor& target){
     if(target.isSuccess){
         std::visit(overloaded {
             [](auto){},
             [&](Parser::Number& num){
-                bbStack.top().instructions.emplace_back(IR::Const{.value = (int32_t)num.value});
+                IR::Instrction& instr = bbStack.top().instructions.emplace_back(IR::Const{
+                    .value = (int32_t)num.value
+                });
+            },
+            [&](Parser::Expression&){
+                exprIndexStack.pop();
             },
         }, target.value);
     }
+}
+
+IR::index_t getInstrIndex(){
+    static IR::index_t instrIndex = 0;
+    return instrIndex++;
 }
