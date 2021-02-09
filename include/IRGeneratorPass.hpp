@@ -30,7 +30,7 @@ private:
         };
         Type type;
         std::vector<size_t> shape;
-        std::optional<IR::Operand> value;
+        std::optional<IR::index_t> value;
     };
     std::unordered_map<std::string, IdentData> identMap;
     std::stack<IR::BasicBlock> bbStack;

@@ -8,6 +8,9 @@
 
 #include <Logger.hpp>
 
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
 void IRGeneratorPass::afterParse(Parser::VarDecl& target){
     if(target.isSuccess){
         for(Parser::Ident& ident : target.identifiers){
@@ -41,7 +44,12 @@ void IRGeneratorPass::afterParse(Parser::StatSequence& target){
 }
 
 void IRGeneratorPass::afterParse(Parser::Factor& target){
-    if(!target.isSuccess){
-        
+    if(target.isSuccess){
+        std::visit(overloaded {
+            [](auto){},
+            [&](Parser::Number& num){
+                bbStack.top().instructions.emplace_back(IR::Const{.value = (int32_t)num.value});
+            },
+        }, target.value);
     }
 }
