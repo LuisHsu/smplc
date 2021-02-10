@@ -23,6 +23,7 @@ public:
     void afterParse(Parser::StatSequence&);
     void afterParse(Parser::Factor&);
     void afterParse(Parser::Assignment&);
+    void afterParse(Parser::Term&);
 
 private:
     struct IdentData{
@@ -36,6 +37,8 @@ private:
     std::unordered_map<std::string, IdentData> identMap;
     std::stack<IR::BasicBlock> bbStack;
     std::stack<IR::index_t> exprStack;
+
+    template<typename T> T& emitInstr(bool pushStack = true);
 };
 
 #endif
