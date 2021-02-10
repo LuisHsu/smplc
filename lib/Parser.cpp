@@ -143,13 +143,13 @@ bool Parser::Ident::parse(){
     Letter letterObj(source, passes);
     isSuccess = false;
     if(letterObj.parse()){
-        identifier = std::string({(char)letterObj.letter});
+        value = std::string({(char)letterObj.letter});
         Digit digitObj(source, passes);
         while(letterObj.parse() || digitObj.parse()){
             if(letterObj.isSuccess){
-                identifier += (char) letterObj.letter;
+                value += (char) letterObj.letter;
             }else if(digitObj.isSuccess){
-                identifier += (char) digitObj.digit;
+                value += (char) digitObj.digit;
             }
         }
         isSuccess = true;

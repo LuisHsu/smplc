@@ -1,0 +1,8 @@
+main
+var v1, v2, v3, v4, v5;
+{
+    let v1 <- 5;
+    let v2 <- v1 + 1;
+    let v3 <- v4 + 2;
+    let v5 <- v3;
+}.

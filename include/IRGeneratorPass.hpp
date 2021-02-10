@@ -22,7 +22,7 @@ public:
     void afterParse(Parser::VarDecl&);
     void afterParse(Parser::StatSequence&);
     void afterParse(Parser::Factor&);
-    void afterParse(Parser::Expression&);
+    void afterParse(Parser::Assignment&);
 
 private:
     struct IdentData{
@@ -35,7 +35,7 @@ private:
     };
     std::unordered_map<std::string, IdentData> identMap;
     std::stack<IR::BasicBlock> bbStack;
-    std::stack<IR::index_t> exprIndexStack;
+    std::stack<IR::index_t> exprStack;
 };
 
 #endif

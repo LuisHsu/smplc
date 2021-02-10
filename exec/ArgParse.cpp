@@ -7,11 +7,13 @@
 #include "ArgParse.hpp"
 
 ArgParse::ArgParse(int argc, char const *argv[]):
-    parserDebug(false)
+    parserDebug(false), parseOnly(false)
 {
     for(int i = 1; i < argc; ++i){
         if(std::string(argv[i]) == "--parser_debug"){
             parserDebug = true;
+        }else if(std::string(argv[i]) == "--parse_only"){
+            parseOnly = true;
         }else{
             inputFiles.emplace_back(argv[i]);
         }

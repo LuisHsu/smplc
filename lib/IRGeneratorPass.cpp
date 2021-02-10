@@ -6,6 +6,7 @@
 
 #include <IRGeneratorPass.hpp>
 
+#include <string>
 #include <Logger.hpp>
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -14,8 +15,8 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 void IRGeneratorPass::afterParse(Parser::VarDecl& target){
     if(target.isSuccess){
         for(Parser::Ident& ident : target.identifiers){
-            if(identMap.find(ident.identifier) != identMap.end()){
-                Logger::put(LogLevel::Error, std::string("redifinition of '") + ident.identifier + "'");
+            if(identMap.find(ident.value) != identMap.end()){
+                Logger::put(LogLevel::Error, std::string("redifinition of '") + ident.value + "'");
             }else{
                 IdentData newIdent;
                 if(target.typeDecl.declType == Parser::TypeDecl::Type::Variable){
@@ -27,7 +28,7 @@ void IRGeneratorPass::afterParse(Parser::VarDecl& target){
                         newIdent.shape.push_back(size.value);
                     }
                 }
-                identMap.insert({ident.identifier, newIdent});
+                identMap.insert({ident.value, newIdent});
             }
         }
     }
@@ -43,12 +44,6 @@ void IRGeneratorPass::afterParse(Parser::StatSequence& target){
     }
 }
 
-void IRGeneratorPass::afterParse(Parser::Expression& target){
-    if(target.isSuccess){
-        exprIndexStack.push(IR::getInstrIndex(bbStack.top().instructions.back()));
-    }
-}
-
 void IRGeneratorPass::afterParse(Parser::Factor& target){
     if(target.isSuccess){
         std::visit(overloaded {
@@ -57,15 +52,36 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
                 IR::Instrction& instr = bbStack.top().instructions.emplace_back(IR::Const{
                     .value = (int32_t)num.value
                 });
+                exprStack.push(IR::getInstrIndex(instr));
             },
-            [&](Parser::Expression&){
-                exprIndexStack.pop();
+            [&](Parser::Designator& des){
+                if(identMap.find(des.identifier.value) == identMap.end()){
+                    Logger::put(LogLevel::Error, std::string("undeclared identifier '") + des.identifier.value + "'");
+                }else{
+                    std::optional<IR::index_t>& identVal = identMap.at(des.identifier.value).value;
+                    if(!identVal.has_value()){
+                        // Uninitialized
+                        Logger::put(LogLevel::Warning, std::string("uninitialized variable '") + des.identifier.value + "'");
+                        IR::index_t instr = IR::getInstrIndex(bbStack.top().instructions.emplace_back(IR::Const{
+                            .value = 0
+                        }));
+                        identVal = instr;
+                    }
+                    exprStack.push(*identVal);
+                }
             },
         }, target.value);
     }
 }
 
-IR::index_t getInstrIndex(){
-    static IR::index_t instrIndex = 0;
-    return instrIndex++;
+void IRGeneratorPass::afterParse(Parser::Assignment& target){
+    if(target.isSuccess){
+        IR::index_t resultIndex = exprStack.top();
+        exprStack.pop();
+        if(identMap.find(target.designator.identifier.value) == identMap.end()){
+            Logger::put(LogLevel::Error, std::string("undeclared identifier '") + target.designator.identifier.value + "'");
+        }else{
+            identMap.at(target.designator.identifier.value).value = resultIndex;
+        }
+    }
 }

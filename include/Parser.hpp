@@ -54,7 +54,7 @@ class Ident: public Interface{
 public:
     Ident(Source& source, std::vector<std::reference_wrapper<Pass>>& passes);
     bool parse();
-    std::string identifier;
+    std::string value;
 };
 
 class Number: public Interface{

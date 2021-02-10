@@ -26,10 +26,10 @@ void printLogs(){
             ColorPrint::error(msg.c_str());
             break;
         case LogLevel::Warning :
-            ColorPrint::error(msg.c_str());
+            ColorPrint::warning(msg.c_str());
             break;
         case LogLevel::Info :
-            ColorPrint::error(msg.c_str());
+            ColorPrint::info(msg.c_str());
             break;
         }
     });
@@ -59,8 +59,10 @@ int main(int argc, char const *argv[]){
     if(arguments.parserDebug){
         parserPasses.emplace_back(printPass.emplace());
     }
-    IRGeneratorPass irGeneratorPass;
-    parserPasses.push_back(irGeneratorPass);
+    std::optional<IRGeneratorPass> irGeneratorPass;
+    if(!arguments.parseOnly){
+        parserPasses.emplace_back(irGeneratorPass.emplace());
+    }
 
     // Parse
     try{

@@ -39,7 +39,7 @@ void PrintPass::afterParse(Parser::RelOp& target){
 }
 void PrintPass::afterParse(Parser::Ident& target){
     if(target.isSuccess){
-        std::cout << "Ident: " << target.identifier << std::endl;
+        std::cout << "Ident: " << target.value << std::endl;
     }
 }
 void PrintPass::afterParse(Parser::Number& target){
@@ -49,7 +49,7 @@ void PrintPass::afterParse(Parser::Number& target){
 }
 void PrintPass::afterParse(Parser::Designator& target){
     if(target.isSuccess){
-        std::cout << "Designator[" << target.identifier.identifier <<"]" << std::endl;
+        std::cout << "Designator[" << target.identifier.value <<"]" << std::endl;
     }
 }
 void PrintPass::afterParse(Parser::Factor& target){
@@ -137,7 +137,7 @@ void PrintPass::afterParse(Parser::Assignment& target){
 
 void PrintPass::afterParse(Parser::FuncCall& target){
     if(target.isSuccess){
-        std::cout << "FuncCall: " << target.identifier.identifier << " (" << target.expressions.size() << " params)" << std::endl;
+        std::cout << "FuncCall: " << target.identifier.value << " (" << target.expressions.size() << " params)" << std::endl;
     }
 }
 
@@ -202,7 +202,7 @@ void PrintPass::afterParse(Parser::VarDecl& target){
     if(target.isSuccess){
         std::cout << "VarDecl: ";;
         for(Parser::Ident& ident: target.identifiers){
-            std::cout << ident.identifier << " ";
+            std::cout << ident.value << " ";
         }
         std::cout << std::endl;
     }
@@ -212,7 +212,7 @@ void PrintPass::afterParse(Parser::FormalParam& target){
     if(target.isSuccess){
         std::cout << "FormalParam: (";
         for(Parser::Ident& ident: target.identifiers){
-            std::cout << ident.identifier << " ";
+            std::cout << ident.value << " ";
         }
         std::cout << ")" << std::endl;
     }
@@ -228,7 +228,7 @@ void PrintPass::afterParse(Parser::FuncBody& target){
         }
         for(Parser::VarDecl& varDecl: target.varDecls){
             for(Parser::Ident& ident: varDecl.identifiers){
-                std::cout << ident.identifier << " ";
+                std::cout << ident.value << " ";
             }
         }
         std::cout << std::endl;
@@ -241,7 +241,7 @@ void PrintPass::afterParse(Parser::FuncDecl& target){
         if(target.isVoid){
             std::cout << " (void)";
         }
-        std::cout << ": " << target.identifier.identifier << std::endl;
+        std::cout << ": " << target.identifier.value << std::endl;
     }
 }
 
@@ -250,12 +250,12 @@ void PrintPass::afterParse(Parser::Computation& target){
         std::cout << "Computation: variable - ";
         for(Parser::VarDecl& varDecl: target.varDecls){
             for(Parser::Ident& ident: varDecl.identifiers){
-                std::cout << ident.identifier << " ";
+                std::cout << ident.value << " ";
             }
         }
         std::cout << "; function - ";
         for(Parser::FuncDecl& funcDecl: target.funcDecls){
-            std::cout << funcDecl.identifier.identifier << " ";
+            std::cout << funcDecl.identifier.value << " ";
         }
         std::cout << std::endl;
     }
