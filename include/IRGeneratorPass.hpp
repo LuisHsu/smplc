@@ -24,6 +24,7 @@ public:
     void afterParse(Parser::Factor&);
     void afterParse(Parser::Assignment&);
     void afterParse(Parser::Term&);
+    void afterParse(Parser::Expression&);
 
 private:
     struct IdentData{

@@ -12,7 +12,7 @@ IR::InstrBase::InstrBase(){
 }
 
 const IR::index_t IR::getInstrIndex(const IR::Instrction& instr){
-    return std::visit<const IR::index_t>([](auto& real){
+    return std::visit<IR::index_t>([](auto& real){
         return real.index;
     }, instr);
 }

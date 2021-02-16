@@ -133,3 +133,42 @@ void IRGeneratorPass::afterParse(Parser::Term& target){
         exprStack.push(opStack.top());
     }
 }
+
+void IRGeneratorPass::afterParse(Parser::Expression& target){
+    if(target.isSuccess){
+        std::stack<IR::index_t> opStack;
+        std::queue<std::variant<
+            std::reference_wrapper<IR::Add>,
+            std::reference_wrapper<IR::Sub>
+        >> instrQueue;
+        for(std::pair<Parser::Expression::Type, Parser::Term>& factor: target.terms){
+            opStack.push(exprStack.top());
+            exprStack.pop();
+            if(factor.first == Parser::Expression::Type::Plus){
+                instrQueue.emplace(emitInstr<IR::Add>(false));
+            }else if(factor.first == Parser::Expression::Type::Minus){
+                instrQueue.emplace(emitInstr<IR::Sub>(false));
+            }
+        }
+        while(!instrQueue.empty()){
+            std::visit(overloaded{
+                [&](std::reference_wrapper<IR::Add>& instr){
+                    instr.get().operand1 = opStack.top();
+                    opStack.pop();
+                    instr.get().operand2 = opStack.top();
+                    opStack.pop();
+                    opStack.push(instr.get().index);
+                },
+                [&](std::reference_wrapper<IR::Sub>& instr){
+                    instr.get().operand1 = opStack.top();
+                    opStack.pop();
+                    instr.get().operand2 = opStack.top();
+                    opStack.pop();
+                    opStack.push(instr.get().index);
+                }
+            }, instrQueue.front());
+            instrQueue.pop();
+        }
+        exprStack.push(opStack.top());
+    }
+}
