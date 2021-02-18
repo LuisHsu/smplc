@@ -1,6 +1,8 @@
 #ifndef SMPLC_IRGeneratorPass_DEF
 #define SMPLC_IRGeneratorPass_DEF
 
+#include <list>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <optional>
@@ -17,6 +19,7 @@ public:
 
     /* Before */
     void beforeParse(Parser::StatSequence&);
+    void beforeParse(Parser::Computation&);
 
     /* After */
     void afterParse(Parser::VarDecl&);
@@ -33,13 +36,14 @@ private:
         };
         Type type;
         std::vector<size_t> shape;
-        std::optional<IR::index_t> value;
     };
-    std::unordered_map<std::string, IdentData> identMap;
+    std::list<std::pair<std::string, std::unordered_map<std::string, IdentData>>> varList;
+    std::stack<std::unordered_map<std::string, IR::index_t>> varStack;
     std::stack<IR::BasicBlock> bbStack;
     std::stack<IR::index_t> exprStack;
 
     template<typename T> T& emitInstr(bool pushStack = true);
+    std::string getFuncMsg();
 };
 
 #endif

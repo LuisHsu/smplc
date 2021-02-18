@@ -15,6 +15,9 @@
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+std::string IRGeneratorPass::getFuncMsg(){
+    return varList.back().first.empty() ? "main" : "function " + varList.back().first;
+}
 
 template<typename T> T& IRGeneratorPass::emitInstr(bool pushStack){
     IR::Instrction& instr = bbStack.top().instructions.emplace_back(T());
@@ -26,9 +29,10 @@ template<typename T> T& IRGeneratorPass::emitInstr(bool pushStack){
 
 void IRGeneratorPass::afterParse(Parser::VarDecl& target){
     if(target.isSuccess){
+        std::unordered_map<std::string, IdentData>& identMap = varList.back().second;
         for(Parser::Ident& ident : target.identifiers){
             if(identMap.find(ident.value) != identMap.end()){
-                Logger::put(LogLevel::Error, std::string("redifinition of '") + ident.value + "'");
+                Logger::put(LogLevel::Error, std::string("redifinition of '") + ident.value + "' in " + getFuncMsg());
             }else{
                 IdentData newIdent;
                 if(target.typeDecl.declType == Parser::TypeDecl::Type::Variable){
@@ -48,11 +52,17 @@ void IRGeneratorPass::afterParse(Parser::VarDecl& target){
 
 void IRGeneratorPass::beforeParse(Parser::StatSequence&){
     bbStack.emplace();
+    if(varStack.empty()){
+        varStack.emplace();
+    }else{
+        varStack.emplace(varStack.top());
+    }
 }
 
 void IRGeneratorPass::afterParse(Parser::StatSequence& target){
     if(!target.isSuccess){
         bbStack.pop();
+        varStack.pop();
     }
 }
 
@@ -65,18 +75,22 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
                 instr.value = (int32_t)num.value;
             },
             [&](Parser::Designator& des){
-                if(identMap.find(des.identifier.value) == identMap.end()){
-                    Logger::put(LogLevel::Error, std::string("undeclared identifier '") + des.identifier.value + "'");
+                std::unordered_map<std::string, IdentData>& identMap = varList.back().second;
+                std::string& identName = des.identifier.value;
+                if(identMap.find(identName) == identMap.end()){
+                    Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
                 }else{
-                    std::optional<IR::index_t>& identVal = identMap.at(des.identifier.value).value;
-                    if(!identVal.has_value()){
+                    std::unordered_map<std::string, IR::index_t>::iterator valIt = varStack.top().find(identName);
+                    if(valIt == varStack.top().end()){
                         // Uninitialized
-                        Logger::put(LogLevel::Warning, std::string("uninitialized variable '") + des.identifier.value + "'");
+                        Logger::put(LogLevel::Warning, std::string("uninitialized variable '") + identName + "' in " + getFuncMsg());
                         IR::Const& instr = emitInstr<IR::Const>();
                         instr.value = 0;
-                        identVal = instr.index;
+                        varStack.top().emplace(identName, instr.index);
+                        exprStack.push(instr.index);
+                    }else{
+                        exprStack.push(valIt->second);
                     }
-                    exprStack.push(*identVal);
                 }
             },
         }, target.value);
@@ -87,10 +101,12 @@ void IRGeneratorPass::afterParse(Parser::Assignment& target){
     if(target.isSuccess){
         IR::index_t resultIndex = exprStack.top();
         exprStack.pop();
-        if(identMap.find(target.designator.identifier.value) == identMap.end()){
-            Logger::put(LogLevel::Error, std::string("undeclared identifier '") + target.designator.identifier.value + "'");
+        std::unordered_map<std::string, IdentData>& identMap = varList.back().second;
+        std::string& identName = target.designator.identifier.value;
+        if(identMap.find(identName) == identMap.end()){
+            Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
         }else{
-            identMap.at(target.designator.identifier.value).value = resultIndex;
+            varStack.top()[identName] = resultIndex;
         }
     }
 }
@@ -171,4 +187,8 @@ void IRGeneratorPass::afterParse(Parser::Expression& target){
         }
         exprStack.push(opStack.top());
     }
+}
+
+void IRGeneratorPass::beforeParse(Parser::Computation&){
+    varList.emplace_back("", std::unordered_map<std::string, IdentData>());
 }
