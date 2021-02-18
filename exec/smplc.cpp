@@ -19,17 +19,17 @@
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
 
-void printLogs(){
-    Logger::dump([](LogLevel level, std::string msg){
+void printLogs(std::string fileName){
+    Logger::dump([&](unsigned int lineNum, LogLevel level, std::string msg){
         switch (level){
         case LogLevel::Error :
-            ColorPrint::error(msg.c_str());
+            ColorPrint::error(fileName, lineNum, msg.c_str());
             break;
         case LogLevel::Warning :
-            ColorPrint::warning(msg.c_str());
+            ColorPrint::warning(fileName, lineNum, msg.c_str());
             break;
         case LogLevel::Info :
-            ColorPrint::info(msg.c_str());
+            ColorPrint::info(fileName, lineNum, msg.c_str());
             break;
         }
     });
@@ -67,12 +67,12 @@ int main(int argc, char const *argv[]){
     // Parse
     try{
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
-            printLogs();
+            printLogs(arguments.inputFiles[0]);
             return -1;
         }
     }catch(Exception& err){
         ColorPrint::fatal(err.what());
     }
-    printLogs();
+    printLogs(arguments.inputFiles[0]);
     return 0;
 }

@@ -17,14 +17,15 @@ class Logger{
 private:
     Logger();
     static Logger logger;
-    unsigned int numInfo, numWarning, numError;
-    std::queue<std::pair<LogLevel, std::string>> logs;
+    unsigned int numInfo, numWarning, numError, lineNum;
+    std::queue<std::tuple<unsigned int, LogLevel, std::string>> logs;
 public:
     static void put(LogLevel level, std::string msg);
     static unsigned int infoCount();
     static unsigned int warningCount();
     static unsigned int errorCount();
-    static void dump(std::function<void(LogLevel, std::string)> callback);
+    static void increaseLine();
+    static void dump(std::function<void(unsigned int, LogLevel, std::string)> callback);
 };
 
 #endif

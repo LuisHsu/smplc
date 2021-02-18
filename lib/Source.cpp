@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <Exception.hpp>
+#include <Logger.hpp>
 
 Source::Source(std::istream& stream):
     stream(stream)
@@ -18,6 +19,9 @@ static int skipComment(std::istream& stream){
     if(!stream.eof()){
         int cur = stream.get();
         if(cur == '\v' || cur == '\r' || cur == '\t' || cur == '\n'){
+            if(cur == '\n'){
+                Logger::increaseLine();
+            }
             cur = ' ';
         }else if(cur == '/' && !stream.eof()){
             int next = stream.get();

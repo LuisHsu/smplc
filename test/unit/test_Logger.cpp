@@ -29,7 +29,7 @@ TEST(unit_Logger, dump){
     Logger::put(LogLevel::Warning, "testWarn");
     Logger::put(LogLevel::Info, "testInfo");
     unsigned int count = 0;
-    Logger::dump([&count](LogLevel level, std::string msg) -> void {
+    Logger::dump([&count](unsigned int line, LogLevel level, std::string msg) -> void {
         switch (count++){
         case 0:
             EXPECT_EQ(level, LogLevel::Error);
