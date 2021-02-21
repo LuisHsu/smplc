@@ -1,13 +1,12 @@
 #ifndef SMPLC_IRGeneratorPass_DEF
 #define SMPLC_IRGeneratorPass_DEF
 
-#include <list>
-#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <optional>
 #include <string>
 #include <stack>
+#include <memory>
 #include <functional>
 
 #include <IR.hpp>
@@ -15,7 +14,18 @@
 
 class IRGeneratorPass: public Parser::Pass{
 public:
-    std::vector<IR::BasicBlock> basicBlocks;
+    struct TypeData{
+        enum class Type{
+            Var, Array,
+        };
+        Type type;
+        std::vector<size_t> shape;
+    };
+    struct BlockEntry{
+        std::shared_ptr<IR::BasicBlock> blocks;
+        std::unordered_map<std::string, TypeData> variables;
+    };
+    std::unordered_map<std::string, BlockEntry> blockMap;
 
     /* Before */
     void beforeParse(Parser::StatSequence&);
@@ -28,21 +38,15 @@ public:
     void afterParse(Parser::Assignment&);
     void afterParse(Parser::Term&);
     void afterParse(Parser::Expression&);
+    void afterParse(Parser::IfStatement&);
+    void afterParse(Parser::Relation&);
 
 private:
-    struct IdentData{
-        enum class Type{
-            Var, Array,
-        };
-        Type type;
-        std::vector<size_t> shape;
-    };
-    std::list<std::pair<std::string, std::unordered_map<std::string, IdentData>>> varList;
+    std::string curFunc;
     std::stack<std::unordered_map<std::string, IR::index_t>> varStack;
-    std::stack<IR::BasicBlock> bbStack;
+    std::stack<std::shared_ptr<IR::BasicBlock>> bbStack;
     std::stack<IR::index_t> exprStack;
-
-    template<typename T> T& emitInstr(bool pushStack = true);
+    template<typename T, typename... O> T& emitInstr(O...);
     std::string getFuncMsg();
 };
 

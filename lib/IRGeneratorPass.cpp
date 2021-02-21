@@ -16,42 +16,38 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 std::string IRGeneratorPass::getFuncMsg(){
-    return varList.back().first.empty() ? "main" : "function " + varList.back().first;
+    return curFunc.empty() ? "main" : std::string("function ") + curFunc;
 }
 
-template<typename T> T& IRGeneratorPass::emitInstr(bool pushStack){
-    IR::Instrction& instr = bbStack.top().instructions.emplace_back(T());
-    if(pushStack){
-        exprStack.push(IR::getInstrIndex(instr));
-    }
-    return std::get<T>(instr);
+template<typename T, typename... O> T& IRGeneratorPass::emitInstr(O... op){
+    return std::get<T>(bbStack.top()->instructions.emplace_back(T(op...)));
 }
 
 void IRGeneratorPass::afterParse(Parser::VarDecl& target){
     if(target.isSuccess){
-        std::unordered_map<std::string, IdentData>& identMap = varList.back().second;
         for(Parser::Ident& ident : target.identifiers){
-            if(identMap.find(ident.value) != identMap.end()){
+            std::unordered_map<std::string, TypeData>& varMap = blockMap.at(curFunc).variables;
+            if(varMap.find(ident.value) != varMap.end()){
                 Logger::put(LogLevel::Error, std::string("redifinition of '") + ident.value + "' in " + getFuncMsg());
             }else{
-                IdentData newIdent;
+                TypeData newVar;
                 if(target.typeDecl.declType == Parser::TypeDecl::Type::Variable){
-                    newIdent.type = IdentData::Type::Var;
-                    newIdent.shape.push_back(1);
+                    newVar.type = TypeData::Type::Var;
+                    newVar.shape.push_back(1);
                 }else if(target.typeDecl.declType == Parser::TypeDecl::Type::Array){
-                    newIdent.type = IdentData::Type::Array;
+                    newVar.type = TypeData::Type::Array;
                     for(Parser::Number& size: target.typeDecl.arraySizes){
-                        newIdent.shape.push_back(size.value);
+                        newVar.shape.push_back(size.value);
                     }
                 }
-                identMap.insert({ident.value, newIdent});
+                varMap.insert({ident.value, newVar});
             }
         }
     }
 }
 
 void IRGeneratorPass::beforeParse(Parser::StatSequence&){
-    bbStack.emplace();
+    bbStack.emplace(std::make_shared<IR::BasicBlock>());
     if(varStack.empty()){
         varStack.emplace();
     }else{
@@ -60,10 +56,12 @@ void IRGeneratorPass::beforeParse(Parser::StatSequence&){
 }
 
 void IRGeneratorPass::afterParse(Parser::StatSequence& target){
-    if(!target.isSuccess){
+    if(target.isSuccess){
+        bbStack.top()->variableVal.swap(varStack.top());
+    }else{
         bbStack.pop();
-        varStack.pop();
     }
+    varStack.pop();
 }
 
 void IRGeneratorPass::afterParse(Parser::Factor& target){
@@ -71,23 +69,22 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
         std::visit(overloaded {
             [](auto){},
             [&](Parser::Number& num){
-                IR::Const& instr = emitInstr<IR::Const>();
-                instr.value = (int32_t)num.value;
+
+                exprStack.push(emitInstr<IR::Const>((int32_t) num.value).index);
             },
             [&](Parser::Designator& des){
-                std::unordered_map<std::string, IdentData>& identMap = varList.back().second;
                 std::string& identName = des.identifier.value;
-                if(identMap.find(identName) == identMap.end()){
+                std::unordered_map<std::string, TypeData>& varMap = blockMap.at(curFunc).variables;
+                if(varMap.find(identName) == varMap.end()){
                     Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
                 }else{
                     std::unordered_map<std::string, IR::index_t>::iterator valIt = varStack.top().find(identName);
                     if(valIt == varStack.top().end()){
                         // Uninitialized
                         Logger::put(LogLevel::Warning, std::string("uninitialized variable '") + identName + "' in " + getFuncMsg());
-                        IR::Const& instr = emitInstr<IR::Const>();
-                        instr.value = 0;
-                        varStack.top().emplace(identName, instr.index);
+                        IR::Const& instr = emitInstr<IR::Const>((int32_t) 0);
                         exprStack.push(instr.index);
+                        varStack.top().emplace(identName, instr.index);
                     }else{
                         exprStack.push(valIt->second);
                     }
@@ -101,9 +98,9 @@ void IRGeneratorPass::afterParse(Parser::Assignment& target){
     if(target.isSuccess){
         IR::index_t resultIndex = exprStack.top();
         exprStack.pop();
-        std::unordered_map<std::string, IdentData>& identMap = varList.back().second;
         std::string& identName = target.designator.identifier.value;
-        if(identMap.find(identName) == identMap.end()){
+        std::unordered_map<std::string, TypeData>& varMap = blockMap.at(curFunc).variables;
+        if(varMap.find(identName) == varMap.end()){
             Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
         }else{
             varStack.top()[identName] = resultIndex;
@@ -114,37 +111,23 @@ void IRGeneratorPass::afterParse(Parser::Assignment& target){
 void IRGeneratorPass::afterParse(Parser::Term& target){
     if(target.isSuccess){
         std::stack<IR::index_t> opStack;
-        std::queue<std::variant<
-            std::reference_wrapper<IR::Mul>,
-            std::reference_wrapper<IR::Div>
-        >> instrQueue;
-        for(std::pair<Parser::Term::Type, Parser::Factor>& factor: target.factors){
+        for(size_t i = 0; i < target.factors.size(); ++i){
             opStack.push(exprStack.top());
             exprStack.pop();
-            if(factor.first == Parser::Term::Type::Times){
-                instrQueue.emplace(emitInstr<IR::Mul>(false));
-            }else if(factor.first == Parser::Term::Type::Divide){
-                instrQueue.emplace(emitInstr<IR::Div>(false));
-            }
         }
-        while(!instrQueue.empty()){
-            std::visit(overloaded{
-                [&](std::reference_wrapper<IR::Mul>& instr){
-                    instr.get().operand1 = opStack.top();
-                    opStack.pop();
-                    instr.get().operand2 = opStack.top();
-                    opStack.pop();
-                    opStack.push(instr.get().index);
-                },
-                [&](std::reference_wrapper<IR::Div>& instr){
-                    instr.get().operand1 = opStack.top();
-                    opStack.pop();
-                    instr.get().operand2 = opStack.top();
-                    opStack.pop();
-                    opStack.push(instr.get().index);
+        for(auto&& factor: target.factors){
+            if(factor.first != Parser::Term::Type::None){
+                IR::index_t operand1, operand2, result;
+                operand1 = opStack.top();
+                opStack.pop();
+                operand2 = opStack.top();
+                opStack.pop();
+                if(factor.first == Parser::Term::Type::Divide){
+                    opStack.push(emitInstr<IR::Mul>(operand1, operand2).index);
+                }else{
+                    opStack.push(emitInstr<IR::Div>(operand1, operand2).index);
                 }
-            }, instrQueue.front());
-            instrQueue.pop();
+            }
         }
         exprStack.push(opStack.top());
     }
@@ -153,42 +136,113 @@ void IRGeneratorPass::afterParse(Parser::Term& target){
 void IRGeneratorPass::afterParse(Parser::Expression& target){
     if(target.isSuccess){
         std::stack<IR::index_t> opStack;
-        std::queue<std::variant<
-            std::reference_wrapper<IR::Add>,
-            std::reference_wrapper<IR::Sub>
-        >> instrQueue;
-        for(std::pair<Parser::Expression::Type, Parser::Term>& factor: target.terms){
+        for(size_t i = 0; i < target.terms.size(); ++i){
             opStack.push(exprStack.top());
             exprStack.pop();
-            if(factor.first == Parser::Expression::Type::Plus){
-                instrQueue.emplace(emitInstr<IR::Add>(false));
-            }else if(factor.first == Parser::Expression::Type::Minus){
-                instrQueue.emplace(emitInstr<IR::Sub>(false));
-            }
         }
-        while(!instrQueue.empty()){
-            std::visit(overloaded{
-                [&](std::reference_wrapper<IR::Add>& instr){
-                    instr.get().operand1 = opStack.top();
-                    opStack.pop();
-                    instr.get().operand2 = opStack.top();
-                    opStack.pop();
-                    opStack.push(instr.get().index);
-                },
-                [&](std::reference_wrapper<IR::Sub>& instr){
-                    instr.get().operand1 = opStack.top();
-                    opStack.pop();
-                    instr.get().operand2 = opStack.top();
-                    opStack.pop();
-                    opStack.push(instr.get().index);
+        for(auto&& factor: target.terms){
+            if(factor.first != Parser::Expression::Type::None){
+                IR::index_t operand1, operand2, result;
+                operand1 = opStack.top();
+                opStack.pop();
+                operand2 = opStack.top();
+                opStack.pop();
+                if(factor.first == Parser::Expression::Type::Plus){
+                    opStack.push(emitInstr<IR::Add>(operand1, operand2).index);
+                }else{
+                    opStack.push(emitInstr<IR::Sub>(operand1, operand2).index);
                 }
-            }, instrQueue.front());
-            instrQueue.pop();
+            }
         }
         exprStack.push(opStack.top());
     }
 }
 
 void IRGeneratorPass::beforeParse(Parser::Computation&){
-    varList.emplace_back("", std::unordered_map<std::string, IdentData>());
+    curFunc = "";
+    blockMap.emplace(curFunc, BlockEntry{.blocks = std::make_shared<IR::BasicBlock>()});
+}
+
+void IRGeneratorPass::afterParse(Parser::IfStatement& target){
+    if(target.isSuccess){
+        // Blocks
+        if(!target.elseStat.has_value()){
+            bbStack.emplace(std::make_shared<IR::BasicBlock>());
+            bbStack.top()->variableVal = varStack.top();
+        }
+        std::shared_ptr<IR::BasicBlock> elseBlock = bbStack.top();
+        bbStack.pop();
+        std::shared_ptr<IR::BasicBlock> thenBlock = bbStack.top();
+        bbStack.pop();
+        std::shared_ptr<IR::BasicBlock> nextBlock = std::make_shared<IR::BasicBlock>();
+        IR::index_t nextInstr = IR::getInstrIndex(nextBlock->instructions.emplace_back(IR::Nop()));
+        
+        elseBlock->instructions.emplace_back(IR::Bra(nextInstr));
+        elseBlock->branch = nextBlock;
+        bbStack.top()->fallThrough = elseBlock;
+        
+        if(thenBlock->instructions.empty()){
+            thenBlock->instructions.emplace_back(IR::Nop());
+        }
+        thenBlock->fallThrough = nextBlock;
+        bbStack.top()->branch = thenBlock;
+        
+        // Branch instruction
+        IR::index_t brachTo = IR::getInstrIndex(thenBlock->instructions.front());
+        IR::index_t cmpOperand = exprStack.top();
+        exprStack.pop();
+        switch (target.relation.opType){
+            case Parser::RelOp::Type::Equal :
+                bbStack.top()->instructions.emplace_back(IR::Beq(cmpOperand, brachTo));
+                break;
+            case Parser::RelOp::Type::NonEqual :
+                bbStack.top()->instructions.emplace_back(IR::Bne(cmpOperand, brachTo));
+                break;
+            case Parser::RelOp::Type::GreaterEqual :
+                bbStack.top()->instructions.emplace_back(IR::Bge(cmpOperand, brachTo));
+                break;
+            case Parser::RelOp::Type::GreaterThan :
+                bbStack.top()->instructions.emplace_back(IR::Bgt(cmpOperand, brachTo));
+                break;
+            case Parser::RelOp::Type::LessEqual :
+                bbStack.top()->instructions.emplace_back(IR::Ble(cmpOperand, brachTo));
+                break;
+            case Parser::RelOp::Type::LessThan :
+                bbStack.top()->instructions.emplace_back(IR::Blt(cmpOperand, brachTo));
+                break;
+        }
+        // Wrap previous block
+        bbStack.top()->variableVal.swap(varStack.top());
+        // Next block
+        bbStack.pop();
+        bbStack.push(nextBlock);
+        for(std::pair<std::string, TypeData>&& variable: blockMap.at(curFunc).variables){
+            if(thenBlock->variableVal.contains(variable.first)){
+                if(elseBlock->variableVal.contains(variable.first)){
+                    if(thenBlock->variableVal[variable.first] != elseBlock->variableVal[variable.first]){
+                        varStack.top()[variable.first] = emitInstr<IR::Phi>(thenBlock->variableVal[variable.first], elseBlock->variableVal[variable.first]).index;
+                    }else{
+                        varStack.top()[variable.first] = thenBlock->variableVal[variable.first];
+                    }
+                }else{
+                    varStack.top()[variable.first] = emitInstr<IR::Phi>(thenBlock->variableVal[variable.first], emitInstr<IR::Nop>().index).index;
+                }
+            }else{
+                if(elseBlock->variableVal.contains(variable.first)){
+                    varStack.top()[variable.first] = emitInstr<IR::Phi>(emitInstr<IR::Nop>().index, elseBlock->variableVal[variable.first]).index;
+                }
+            }
+        }
+    }
+}
+
+void IRGeneratorPass::afterParse(Parser::Relation& target){
+    if(target.isSuccess){
+        IR::index_t operand1, operand2;
+        operand2 = exprStack.top();
+        exprStack.pop();
+        operand1 = exprStack.top();
+        exprStack.pop();
+        exprStack.push(emitInstr<IR::Cmp>(operand1, operand2).index);
+    }
 }
