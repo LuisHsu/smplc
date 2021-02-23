@@ -64,8 +64,9 @@ int main(int argc, char const *argv[]){
         parserPasses.emplace_back(irGeneratorPass.emplace());
     }
 
-    // Parse
+    // Start
     try{
+        // Parse
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs(arguments.inputFiles[0]);
             return -1;

@@ -16,7 +16,7 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 std::string IRGeneratorPass::getFuncMsg(){
-    return curFunc.empty() ? "main" : std::string("function ") + curFunc;
+    return std::string("function ") + curFunc;
 }
 
 template<typename T, typename... O> T& IRGeneratorPass::emitInstr(O... op){
@@ -47,7 +47,11 @@ void IRGeneratorPass::afterParse(Parser::VarDecl& target){
 }
 
 void IRGeneratorPass::beforeParse(Parser::StatSequence&){
-    bbStack.emplace(std::make_shared<IR::BasicBlock>());
+    if(bbStack.empty()){
+        blockMap[curFunc].root = bbStack.emplace(std::make_shared<IR::BasicBlock>());
+    }else{
+        bbStack.emplace(std::make_shared<IR::BasicBlock>());
+    }
     if(varStack.empty()){
         varStack.emplace();
     }else{
@@ -159,8 +163,8 @@ void IRGeneratorPass::afterParse(Parser::Expression& target){
 }
 
 void IRGeneratorPass::beforeParse(Parser::Computation&){
-    curFunc = "";
-    blockMap.emplace(curFunc, BlockEntry{.blocks = std::make_shared<IR::BasicBlock>()});
+    curFunc = "_main";
+    blockMap.emplace(curFunc, BlockEntry());
 }
 
 void IRGeneratorPass::afterParse(Parser::IfStatement& target){
@@ -170,52 +174,55 @@ void IRGeneratorPass::afterParse(Parser::IfStatement& target){
             bbStack.emplace(std::make_shared<IR::BasicBlock>());
             bbStack.top()->variableVal = varStack.top();
         }
+        
         std::shared_ptr<IR::BasicBlock> elseBlock = bbStack.top();
         bbStack.pop();
+        
         std::shared_ptr<IR::BasicBlock> thenBlock = bbStack.top();
-        bbStack.pop();
-        std::shared_ptr<IR::BasicBlock> nextBlock = std::make_shared<IR::BasicBlock>();
-        IR::index_t nextInstr = IR::getInstrIndex(nextBlock->instructions.emplace_back(IR::Nop()));
-        
-        elseBlock->instructions.emplace_back(IR::Bra(nextInstr));
-        elseBlock->branch = nextBlock;
-        bbStack.top()->fallThrough = elseBlock;
-        
         if(thenBlock->instructions.empty()){
-            thenBlock->instructions.emplace_back(IR::Nop());
+            emitInstr<IR::Nop>();
         }
-        thenBlock->fallThrough = nextBlock;
-        bbStack.top()->branch = thenBlock;
+        bbStack.pop();
         
+        std::shared_ptr<IR::BasicBlock> previous = bbStack.top();
+        previous->variableVal.swap(varStack.top());
+        previous->fallThrough = elseBlock;
+        previous->branch = thenBlock;
+
         // Branch instruction
         IR::index_t brachTo = IR::getInstrIndex(thenBlock->instructions.front());
         IR::index_t cmpOperand = exprStack.top();
         exprStack.pop();
         switch (target.relation.opType){
             case Parser::RelOp::Type::Equal :
-                bbStack.top()->instructions.emplace_back(IR::Beq(cmpOperand, brachTo));
+                emitInstr<IR::Beq>(cmpOperand, brachTo);
                 break;
             case Parser::RelOp::Type::NonEqual :
-                bbStack.top()->instructions.emplace_back(IR::Bne(cmpOperand, brachTo));
+                emitInstr<IR::Bne>(cmpOperand, brachTo);
                 break;
             case Parser::RelOp::Type::GreaterEqual :
-                bbStack.top()->instructions.emplace_back(IR::Bge(cmpOperand, brachTo));
+                emitInstr<IR::Bge>(cmpOperand, brachTo);
                 break;
             case Parser::RelOp::Type::GreaterThan :
-                bbStack.top()->instructions.emplace_back(IR::Bgt(cmpOperand, brachTo));
+                emitInstr<IR::Bgt>(cmpOperand, brachTo);
                 break;
             case Parser::RelOp::Type::LessEqual :
-                bbStack.top()->instructions.emplace_back(IR::Ble(cmpOperand, brachTo));
+                emitInstr<IR::Ble>(cmpOperand, brachTo);
                 break;
             case Parser::RelOp::Type::LessThan :
-                bbStack.top()->instructions.emplace_back(IR::Blt(cmpOperand, brachTo));
+                emitInstr<IR::Blt>(cmpOperand, brachTo);
                 break;
         }
-        // Wrap previous block
-        bbStack.top()->variableVal.swap(varStack.top());
-        // Next block
         bbStack.pop();
-        bbStack.push(nextBlock);
+        
+        // Next block
+        std::shared_ptr<IR::BasicBlock>& nextBlock = bbStack.emplace(std::make_shared<IR::BasicBlock>());
+        
+        elseBlock->instructions.emplace_back(IR::Bra(emitInstr<IR::Nop>().index));
+        elseBlock->branch = nextBlock;
+        thenBlock->fallThrough = nextBlock;
+        
+        // Phi functions
         for(std::pair<std::string, TypeData>&& variable: blockMap.at(curFunc).variables){
             if(thenBlock->variableVal.contains(variable.first)){
                 if(elseBlock->variableVal.contains(variable.first)){
@@ -244,5 +251,80 @@ void IRGeneratorPass::afterParse(Parser::Relation& target){
         operand1 = exprStack.top();
         exprStack.pop();
         exprStack.push(emitInstr<IR::Cmp>(operand1, operand2).index);
+    }
+}
+
+void IRGeneratorPass::beforeParse(Parser::WhileStatement&){
+    if(!varStack.empty()){
+        bbStack.top()->variableVal = varStack.top();
+    }
+    // Block for compare
+    bbStack.emplace(std::make_shared<IR::BasicBlock>());
+}
+
+void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
+    if(target.isSuccess){
+        // Blocks
+        std::shared_ptr<IR::BasicBlock> doBlock = bbStack.top();
+        bbStack.pop();
+
+        std::shared_ptr<IR::BasicBlock> nextBlock = std::make_shared<IR::BasicBlock>();
+        IR::index_t nextInstr = IR::getInstrIndex(nextBlock->instructions.emplace_back(IR::Nop()));
+
+        std::shared_ptr<IR::BasicBlock> cmpBlock = bbStack.top();
+        cmpBlock->fallThrough = doBlock;
+        doBlock->fallThrough = cmpBlock;
+        cmpBlock->branch = nextBlock;
+
+        // Branch instruction
+        IR::index_t cmpOperand = exprStack.top();
+        exprStack.pop();
+        switch (target.relation.opType){
+            case Parser::RelOp::Type::Equal :
+                emitInstr<IR::Beq>(cmpOperand, nextInstr);
+                break;
+            case Parser::RelOp::Type::NonEqual :
+                emitInstr<IR::Bne>(cmpOperand, nextInstr);
+                break;
+            case Parser::RelOp::Type::GreaterEqual :
+                emitInstr<IR::Bge>(cmpOperand, nextInstr);
+                break;
+            case Parser::RelOp::Type::GreaterThan :
+                emitInstr<IR::Bgt>(cmpOperand, nextInstr);
+                break;
+            case Parser::RelOp::Type::LessEqual :
+                emitInstr<IR::Ble>(cmpOperand, nextInstr);
+                break;
+            case Parser::RelOp::Type::LessThan :
+                emitInstr<IR::Blt>(cmpOperand, nextInstr);
+                break;
+        }
+        bbStack.pop();
+
+        std::shared_ptr<IR::BasicBlock> previous = bbStack.top();
+        bbStack.pop();
+        previous->fallThrough = cmpBlock;
+
+        // Phi functions
+        std::vector<IR::Instrction> phis;
+        for(std::pair<std::string, IR::index_t>&& variable: doBlock->variableVal){
+            if(previous->variableVal.contains(variable.first)){
+                if(previous->variableVal.at(variable.first) != variable.second){
+                    IR::index_t origin = previous->variableVal.at(variable.first);
+                    IR::index_t phiIndex = IR::getInstrIndex(phis.emplace_back(IR::Phi(origin, variable.second)));
+                    cmpBlock->relocateMap[origin] = phiIndex;
+                    varStack.top()[variable.first] = phiIndex;
+                }else{
+                    varStack.top()[variable.first] = variable.second;
+                }
+            }else{
+                varStack.top()[variable.first] = variable.second;
+            }
+        }
+        cmpBlock->instructions.insert(cmpBlock->instructions.begin(), phis.begin(), phis.end());
+        cmpBlock->variableVal = varStack.top();
+        bbStack.push(nextBlock);
+    }else{
+        bbStack.pop();
     }
 }

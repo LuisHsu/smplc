@@ -22,7 +22,7 @@ public:
         std::vector<size_t> shape;
     };
     struct BlockEntry{
-        std::shared_ptr<IR::BasicBlock> blocks;
+        std::shared_ptr<IR::BasicBlock> root;
         std::unordered_map<std::string, TypeData> variables;
     };
     std::unordered_map<std::string, BlockEntry> blockMap;
@@ -30,6 +30,7 @@ public:
     /* Before */
     void beforeParse(Parser::StatSequence&);
     void beforeParse(Parser::Computation&);
+    void beforeParse(Parser::WhileStatement&);
 
     /* After */
     void afterParse(Parser::VarDecl&);
@@ -40,6 +41,7 @@ public:
     void afterParse(Parser::Expression&);
     void afterParse(Parser::IfStatement&);
     void afterParse(Parser::Relation&);
+    void afterParse(Parser::WhileStatement&);
 
 private:
     std::string curFunc;
