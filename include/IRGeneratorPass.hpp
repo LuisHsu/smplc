@@ -14,18 +14,7 @@
 
 class IRGeneratorPass: public Parser::Pass{
 public:
-    struct TypeData{
-        enum class Type{
-            Var, Array,
-        };
-        Type type;
-        std::vector<size_t> shape;
-    };
-    struct BlockEntry{
-        std::shared_ptr<IR::BasicBlock> root;
-        std::unordered_map<std::string, TypeData> variables;
-    };
-    std::unordered_map<std::string, BlockEntry> blockMap;
+    IRGeneratorPass(std::unordered_map<std::string, IR::BlockEntry>& blockMap);
 
     /* Before */
     void beforeParse(Parser::StatSequence&);
@@ -42,8 +31,10 @@ public:
     void afterParse(Parser::IfStatement&);
     void afterParse(Parser::Relation&);
     void afterParse(Parser::WhileStatement&);
+    void afterParse(Parser::Computation&);
 
 private:
+    std::unordered_map<std::string, IR::BlockEntry>& blockMap;
     std::string curFunc;
     std::stack<std::unordered_map<std::string, IR::index_t>> varStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> bbStack;

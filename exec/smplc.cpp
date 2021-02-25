@@ -53,15 +53,18 @@ int main(int argc, char const *argv[]){
     }
     Source sourceFile(fileIn);
 
-    // Create parser passes
+    // Create passes
     std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
-    std::optional<PrintPass> printPass;
+    std::vector<std::reference_wrapper<IR::Pass>> irPasses;
+    std::unordered_map<std::string, IR::BlockEntry> blockMap;
+
+    PrintPass printPass;
     if(arguments.parserDebug){
-        parserPasses.emplace_back(printPass.emplace());
+        parserPasses.emplace_back(printPass);
     }
-    std::optional<IRGeneratorPass> irGeneratorPass;
+    IRGeneratorPass irGeneratorPass(blockMap);
     if(!arguments.parseOnly){
-        parserPasses.emplace_back(irGeneratorPass.emplace());
+        parserPasses.emplace_back(irGeneratorPass);
     }
 
     // Start
@@ -70,6 +73,14 @@ int main(int argc, char const *argv[]){
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs(arguments.inputFiles[0]);
             return -1;
+        }
+        // IR
+        for(std::reference_wrapper<IR::Pass> pass : irPasses){
+            pass.get().traverse(blockMap);
+            if(Logger::errorCount() > 0){
+                printLogs(arguments.inputFiles[0]);
+                return -2;
+            }
         }
     }catch(Exception& err){
         ColorPrint::fatal(err.what());

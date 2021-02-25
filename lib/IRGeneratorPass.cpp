@@ -15,6 +15,8 @@
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+IRGeneratorPass::IRGeneratorPass(std::unordered_map<std::string, IR::BlockEntry>& blockMap):blockMap(blockMap){}
+
 std::string IRGeneratorPass::getFuncMsg(){
     return std::string("function ") + curFunc;
 }
@@ -26,16 +28,16 @@ template<typename T, typename... O> T& IRGeneratorPass::emitInstr(O... op){
 void IRGeneratorPass::afterParse(Parser::VarDecl& target){
     if(target.isSuccess){
         for(Parser::Ident& ident : target.identifiers){
-            std::unordered_map<std::string, TypeData>& varMap = blockMap.at(curFunc).variables;
+            std::unordered_map<std::string, IR::TypeData>& varMap = blockMap.at(curFunc).variables;
             if(varMap.find(ident.value) != varMap.end()){
                 Logger::put(LogLevel::Error, std::string("redifinition of '") + ident.value + "' in " + getFuncMsg());
             }else{
-                TypeData newVar;
+                IR::TypeData newVar;
                 if(target.typeDecl.declType == Parser::TypeDecl::Type::Variable){
-                    newVar.type = TypeData::Type::Var;
+                    newVar.type = IR::TypeData::Type::Var;
                     newVar.shape.push_back(1);
                 }else if(target.typeDecl.declType == Parser::TypeDecl::Type::Array){
-                    newVar.type = TypeData::Type::Array;
+                    newVar.type = IR::TypeData::Type::Array;
                     for(Parser::Number& size: target.typeDecl.arraySizes){
                         newVar.shape.push_back(size.value);
                     }
@@ -78,7 +80,7 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
             },
             [&](Parser::Designator& des){
                 std::string& identName = des.identifier.value;
-                std::unordered_map<std::string, TypeData>& varMap = blockMap.at(curFunc).variables;
+                std::unordered_map<std::string, IR::TypeData>& varMap = blockMap.at(curFunc).variables;
                 if(varMap.find(identName) == varMap.end()){
                     Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
                 }else{
@@ -103,7 +105,7 @@ void IRGeneratorPass::afterParse(Parser::Assignment& target){
         IR::index_t resultIndex = exprStack.top();
         exprStack.pop();
         std::string& identName = target.designator.identifier.value;
-        std::unordered_map<std::string, TypeData>& varMap = blockMap.at(curFunc).variables;
+        std::unordered_map<std::string, IR::TypeData>& varMap = blockMap.at(curFunc).variables;
         if(varMap.find(identName) == varMap.end()){
             Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
         }else{
@@ -164,7 +166,7 @@ void IRGeneratorPass::afterParse(Parser::Expression& target){
 
 void IRGeneratorPass::beforeParse(Parser::Computation&){
     curFunc = "_main";
-    blockMap.emplace(curFunc, BlockEntry());
+    blockMap.emplace(curFunc, IR::BlockEntry());
 }
 
 void IRGeneratorPass::afterParse(Parser::IfStatement& target){
@@ -223,7 +225,7 @@ void IRGeneratorPass::afterParse(Parser::IfStatement& target){
         thenBlock->fallThrough = nextBlock;
         
         // Phi functions
-        for(std::pair<std::string, TypeData>&& variable: blockMap.at(curFunc).variables){
+        for(std::pair<std::string, IR::TypeData>&& variable: blockMap.at(curFunc).variables){
             if(thenBlock->variableVal.contains(variable.first)){
                 if(elseBlock->variableVal.contains(variable.first)){
                     if(thenBlock->variableVal[variable.first] != elseBlock->variableVal[variable.first]){
@@ -324,6 +326,19 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
         cmpBlock->instructions.insert(cmpBlock->instructions.begin(), phis.begin(), phis.end());
         cmpBlock->variableVal = varStack.top();
         bbStack.push(nextBlock);
+    }else{
+        bbStack.pop();
+    }
+}
+
+void IRGeneratorPass::afterParse(Parser::Computation& target){
+    if(target.isSuccess){
+        std::unordered_map<std::string, IR::index_t>& usedVariables = bbStack.top()->variableVal;
+        for(auto&& varPair : blockMap[curFunc].variables){
+            if(!usedVariables.contains(varPair.first)){
+                Logger::put(LogLevel::Warning, std::string("unused variable '") + varPair.first + "'");
+            }
+        }
     }else{
         bbStack.pop();
     }

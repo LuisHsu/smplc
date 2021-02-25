@@ -132,6 +132,51 @@ struct BasicBlock{
     std::unordered_map<IR::index_t, IR::index_t> relocateMap;
 };
 
+struct TypeData{
+    enum class Type{
+        Var, Array,
+    };
+    Type type;
+    std::vector<size_t> shape;
+};
+struct BlockEntry{
+    std::shared_ptr<BasicBlock> root;
+    std::unordered_map<std::string, TypeData> variables;
+};
+
+class Pass{
+public:
+    virtual void traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMap);
+
+protected:
+    virtual void beforeVisit(const std::string&, IR::BlockEntry&);
+    virtual void afterVisit(const std::string&, IR::BlockEntry&);
+    virtual void visit(std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Nop&);
+    virtual void visit(Const&);
+    virtual void visit(Neg&);
+    virtual void visit(Add&);
+    virtual void visit(Sub&);
+    virtual void visit(Mul&);
+    virtual void visit(Div&);
+    virtual void visit(Cmp&);
+    virtual void visit(Adda&);
+    virtual void visit(Load&);
+    virtual void visit(Store&);
+    virtual void visit(Phi&);
+    virtual void visit(End&);
+    virtual void visit(Bra&);
+    virtual void visit(Bne&);
+    virtual void visit(Beq&);
+    virtual void visit(Ble&);
+    virtual void visit(Blt&);
+    virtual void visit(Bge&);
+    virtual void visit(Bgt&);
+    virtual void visit(Read&);
+    virtual void visit(Write&);
+    virtual void visit(WriteNL&);
+};
+
 };
 
 #endif
