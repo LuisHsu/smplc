@@ -15,6 +15,7 @@
 #include <Logger.hpp>
 #include <PrintPass.hpp>
 #include <IRGeneratorPass.hpp>
+#include <IRVisualizerPass.hpp>
 
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
@@ -36,45 +37,40 @@ void printLogs(std::string fileName){
 }
 
 int main(int argc, char const *argv[]){
-    // Check argument
-    ArgParse arguments(argc, argv);
-    if(arguments.inputFiles.size() < 1){
-        ColorPrint::fatal("no input file");
-        return -1;
-    }else if(arguments.inputFiles.size() > 1){
-        ColorPrint::fatal("only support one input file now");
-        return -1;
-    }
-    // Create source instance
-    std::ifstream fileIn(arguments.inputFiles[0]);
-    if(!fileIn.is_open()){
-        ColorPrint::fatal("can't open input file");
-        return -1;
-    }
-    Source sourceFile(fileIn);
-
-    // Create passes
-    std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
-    std::vector<std::reference_wrapper<IR::Pass>> irPasses;
-    std::unordered_map<std::string, IR::BlockEntry> blockMap;
-
-    PrintPass printPass;
-    if(arguments.parserDebug){
-        parserPasses.emplace_back(printPass);
-    }
-    IRGeneratorPass irGeneratorPass(blockMap);
-    if(!arguments.parseOnly){
-        parserPasses.emplace_back(irGeneratorPass);
-    }
-
-    // Start
     try{
+        // Check argument
+        ArgParse arguments(argc, argv);
+        // Create source instance
+        std::ifstream fileIn(arguments.inputFiles[0]);
+        if(!fileIn.is_open()){
+            ColorPrint::fatal("can't open input file");
+            return -1;
+        }
+        Source sourceFile(fileIn);
+
+        // Create passes
+        std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
+        std::vector<std::reference_wrapper<IR::Pass>> irPasses;
+        std::unordered_map<std::string, IR::BlockEntry> blockMap;
+
+        PrintPass printPass;
+        if(arguments.parserDebug){
+            parserPasses.emplace_back(printPass);
+        }
+        IRGeneratorPass irGeneratorPass(blockMap);
+        std::optional<IRVisualizerPass> irVisualizerPass;
+        if(!arguments.parseOnly){
+            parserPasses.emplace_back(irGeneratorPass);
+            if(!arguments.irVisualizeFile.empty()){
+                irPasses.emplace_back(irVisualizerPass.emplace(arguments.irVisualizeFile));
+            }
+        }
         // Parse
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs(arguments.inputFiles[0]);
             return -1;
         }
-        // IR
+        // IR Passes
         for(std::reference_wrapper<IR::Pass> pass : irPasses){
             pass.get().traverse(blockMap);
             if(Logger::errorCount() > 0){
@@ -82,9 +78,9 @@ int main(int argc, char const *argv[]){
                 return -2;
             }
         }
+        printLogs(arguments.inputFiles[0]);
     }catch(Exception& err){
         ColorPrint::fatal(err.what());
     }
-    printLogs(arguments.inputFiles[0]);
     return 0;
 }

@@ -6,4 +6,5 @@ add_library(smplc
     PrintPass.cpp
     IR.cpp
     IRGeneratorPass.cpp
+    IRVisualizerPass.cpp
 )

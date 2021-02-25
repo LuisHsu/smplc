@@ -146,35 +146,38 @@ struct BlockEntry{
 
 class Pass{
 public:
-    virtual void traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMap);
+    virtual void traverse(std::unordered_map<std::string, BlockEntry>& blockMap);
 
 protected:
-    virtual void beforeVisit(const std::string&, IR::BlockEntry&);
-    virtual void afterVisit(const std::string&, IR::BlockEntry&);
-    virtual void visit(std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Nop&);
-    virtual void visit(Const&);
-    virtual void visit(Neg&);
-    virtual void visit(Add&);
-    virtual void visit(Sub&);
-    virtual void visit(Mul&);
-    virtual void visit(Div&);
-    virtual void visit(Cmp&);
-    virtual void visit(Adda&);
-    virtual void visit(Load&);
-    virtual void visit(Store&);
-    virtual void visit(Phi&);
-    virtual void visit(End&);
-    virtual void visit(Bra&);
-    virtual void visit(Bne&);
-    virtual void visit(Beq&);
-    virtual void visit(Ble&);
-    virtual void visit(Blt&);
-    virtual void visit(Bge&);
-    virtual void visit(Bgt&);
-    virtual void visit(Read&);
-    virtual void visit(Write&);
-    virtual void visit(WriteNL&);
+    virtual void beforeAll();
+    virtual void afterAll();
+    virtual void beforeVisit(const std::string&, BlockEntry&);
+    virtual void afterVisit(const std::string&, BlockEntry&);
+    virtual void beforeVisit(std::shared_ptr<BasicBlock>&);
+    virtual void afterVisit(std::shared_ptr<BasicBlock>&);
+    virtual void visit(Nop&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Const&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Neg&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Add&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Sub&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Mul&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Div&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Cmp&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Adda&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Load&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Store&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Phi&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(End&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Bra&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Bne&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Beq&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Ble&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Blt&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Bge&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Bgt&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Read&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Write&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(WriteNL&, std::shared_ptr<IR::BasicBlock>&);
 };
 
 };

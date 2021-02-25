@@ -6,6 +6,8 @@
 
 #include "ArgParse.hpp"
 
+#include <Exception.hpp>
+
 ArgParse::ArgParse(int argc, char const *argv[]):
     parserDebug(false), parseOnly(false)
 {
@@ -14,8 +16,20 @@ ArgParse::ArgParse(int argc, char const *argv[]):
             parserDebug = true;
         }else if(std::string(argv[i]) == "--parse_only"){
             parseOnly = true;
+        }else if(std::string(argv[i]) == "--visualize_ir"){
+            if(++i < argc){
+                irVisualizeFile = argv[i];
+            }else{
+                throw Exception("no output file for visualize IR");
+            }
         }else{
             inputFiles.emplace_back(argv[i]);
         }
+    }
+    // Input files
+    if(inputFiles.size() < 1){
+        throw Exception("no input file");
+    }else if(inputFiles.size() > 1){
+        throw Exception("only support one input file now");
     }
 }

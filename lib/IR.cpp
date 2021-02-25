@@ -20,34 +20,38 @@ const IR::index_t IR::getInstrIndex(const IR::Instrction& instr){
     }, instr);
 }
 
+void IR::Pass::beforeAll(){}
+void IR::Pass::afterAll(){}
 void IR::Pass::beforeVisit(const std::string&, IR::BlockEntry&){}
 void IR::Pass::afterVisit(const std::string&, IR::BlockEntry&){}
-void IR::Pass::visit(std::shared_ptr<IR::BasicBlock>&){}
-void IR::Pass::visit(IR::Nop&){}
-void IR::Pass::visit(IR::Const&){}
-void IR::Pass::visit(IR::Neg&){}
-void IR::Pass::visit(IR::Add&){}
-void IR::Pass::visit(IR::Sub&){}
-void IR::Pass::visit(IR::Mul&){}
-void IR::Pass::visit(IR::Div&){}
-void IR::Pass::visit(IR::Cmp&){}
-void IR::Pass::visit(IR::Adda&){}
-void IR::Pass::visit(IR::Load&){}
-void IR::Pass::visit(IR::Store&){}
-void IR::Pass::visit(IR::Phi&){}
-void IR::Pass::visit(IR::End&){}
-void IR::Pass::visit(IR::Bra&){}
-void IR::Pass::visit(IR::Bne&){}
-void IR::Pass::visit(IR::Beq&){}
-void IR::Pass::visit(IR::Ble&){}
-void IR::Pass::visit(IR::Blt&){}
-void IR::Pass::visit(IR::Bge&){}
-void IR::Pass::visit(IR::Bgt&){}
-void IR::Pass::visit(IR::Read&){}
-void IR::Pass::visit(IR::Write&){}
-void IR::Pass::visit(IR::WriteNL&){}
+void IR::Pass::beforeVisit(std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::afterVisit(std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Nop&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Const&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Neg&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Add&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Sub&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Mul&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Div&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Cmp&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Adda&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Load&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Store&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Phi&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::End&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Bra&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Bne&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Beq&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Ble&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Blt&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Bge&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Bgt&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Read&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::Write&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::WriteNL&, std::shared_ptr<IR::BasicBlock>&){}
 
 void IR::Pass::traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMap){
+    beforeAll();
     for(std::pair<const std::string, IR::BlockEntry>& blockPair : blockMap){
         beforeVisit(blockPair.first, blockPair.second);
         if(blockPair.second.root){
@@ -58,12 +62,13 @@ void IR::Pass::traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMa
             while(!blockQueue.empty()){
                 std::shared_ptr<IR::BasicBlock> block = blockQueue.front();
                 blockQueue.pop();
-                visit(block);
+                beforeVisit(block);
                 for(IR::Instrction& instr : block->instructions){
-                    std::visit([this](auto& arg){
-                        visit(arg);
+                    std::visit([this, &block](auto& arg){
+                        visit(arg, block);
                     }, instr);
                 }
+                afterVisit(block);
                 if(block->fallThrough && !traversedSet.contains(block->fallThrough)){
                     blockQueue.push(block->fallThrough);
                     traversedSet.emplace(block->fallThrough);
@@ -76,4 +81,5 @@ void IR::Pass::traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMa
         }
         afterVisit(blockPair.first, blockPair.second);
     }
+    afterAll();
 }

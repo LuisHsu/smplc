@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <string>
 
 class ArgParse{
 public:
@@ -11,6 +12,7 @@ public:
     std::vector<std::string> inputFiles;
     bool parserDebug;
     bool parseOnly;
+    std::string irVisualizeFile;
 };
 
 #endif
