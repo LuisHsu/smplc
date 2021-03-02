@@ -5,7 +5,7 @@
  */
 
 #include <IR.hpp>
-#include <queue>
+#include <stack>
 #include <set>
 #include <memory>
 
@@ -55,13 +55,13 @@ void IR::Pass::traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMa
     for(std::pair<const std::string, IR::BlockEntry>& blockPair : blockMap){
         beforeVisit(blockPair.first, blockPair.second);
         if(blockPair.second.root){
-            std::queue<std::shared_ptr<IR::BasicBlock>> blockQueue;
+            std::stack<std::shared_ptr<IR::BasicBlock>> blockStack;
             std::set<std::shared_ptr<IR::BasicBlock>> traversedSet;
-            blockQueue.push(blockPair.second.root);
+            blockStack.push(blockPair.second.root);
             traversedSet.emplace(blockPair.second.root);
-            while(!blockQueue.empty()){
-                std::shared_ptr<IR::BasicBlock> block = blockQueue.front();
-                blockQueue.pop();
+            while(!blockStack.empty()){
+                std::shared_ptr<IR::BasicBlock> block = blockStack.top();
+                blockStack.pop();
                 beforeVisit(block);
                 for(IR::Instrction& instr : block->instructions){
                     std::visit([this, &block](auto& arg){
@@ -69,13 +69,13 @@ void IR::Pass::traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMa
                     }, instr);
                 }
                 afterVisit(block);
-                if(block->fallThrough && !traversedSet.contains(block->fallThrough)){
-                    blockQueue.push(block->fallThrough);
-                    traversedSet.emplace(block->fallThrough);
-                }
                 if(block->branch && !traversedSet.contains(block->branch)){
-                    blockQueue.push(block->branch);
+                    blockStack.push(block->branch);
                     traversedSet.emplace(block->branch);
+                }
+                if(block->fallThrough && !traversedSet.contains(block->fallThrough)){
+                    blockStack.push(block->fallThrough);
+                    traversedSet.emplace(block->fallThrough);
                 }
             }
         }

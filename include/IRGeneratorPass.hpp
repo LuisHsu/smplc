@@ -38,6 +38,7 @@ private:
     std::string curFunc;
     std::stack<std::unordered_map<std::string, IR::index_t>> varStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> bbStack;
+    std::stack<std::shared_ptr<IR::BasicBlock>> whileStack;
     std::stack<IR::index_t> exprStack;
     template<typename T, typename... O> T& emitInstr(O...);
     std::string getFuncMsg();

@@ -261,21 +261,23 @@ void IRGeneratorPass::beforeParse(Parser::WhileStatement&){
         bbStack.top()->variableVal = varStack.top();
     }
     // Block for compare
-    bbStack.emplace(std::make_shared<IR::BasicBlock>());
+    whileStack.emplace(bbStack.emplace(std::make_shared<IR::BasicBlock>()));
 }
 
 void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
     if(target.isSuccess){
         // Blocks
-        std::shared_ptr<IR::BasicBlock> doBlock = bbStack.top();
-        bbStack.pop();
+        std::shared_ptr<IR::BasicBlock> odBlock = bbStack.top();
+        std::shared_ptr<IR::BasicBlock> cmpBlock = whileStack.top();
+        whileStack.pop();
+        while(bbStack.top() != cmpBlock){
+            cmpBlock->fallThrough = bbStack.top();
+            bbStack.pop();
+        }
+        odBlock->fallThrough = cmpBlock;
 
         std::shared_ptr<IR::BasicBlock> nextBlock = std::make_shared<IR::BasicBlock>();
         IR::index_t nextInstr = IR::getInstrIndex(nextBlock->instructions.emplace_back(IR::Nop()));
-
-        std::shared_ptr<IR::BasicBlock> cmpBlock = bbStack.top();
-        cmpBlock->fallThrough = doBlock;
-        doBlock->fallThrough = cmpBlock;
         cmpBlock->branch = nextBlock;
 
         // Branch instruction
@@ -304,12 +306,11 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
         bbStack.pop();
 
         std::shared_ptr<IR::BasicBlock> previous = bbStack.top();
-        bbStack.pop();
         previous->fallThrough = cmpBlock;
 
         // Phi functions
         std::vector<IR::Instrction> phis;
-        for(std::pair<std::string, IR::index_t>&& variable: doBlock->variableVal){
+        for(std::pair<std::string, IR::index_t>&& variable: odBlock->variableVal){
             if(previous->variableVal.contains(variable.first)){
                 if(previous->variableVal.at(variable.first) != variable.second){
                     IR::index_t origin = previous->variableVal.at(variable.first);
@@ -328,6 +329,7 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
         bbStack.push(nextBlock);
     }else{
         bbStack.pop();
+        whileStack.pop();
     }
 }
 
