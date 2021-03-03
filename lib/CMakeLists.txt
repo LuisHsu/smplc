@@ -7,4 +7,5 @@ add_library(smplc
     IR.cpp
     IRGeneratorPass.cpp
     IRVisualizerPass.cpp
+    RemapPass.cpp
 )

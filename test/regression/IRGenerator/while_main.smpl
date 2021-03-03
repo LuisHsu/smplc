@@ -9,13 +9,21 @@ var val1, val2, val3, val4;
         while val4 > 6 do
             let val4 <- val4 - 2;
         od;
-        let val1 <- 5;
-        while val1 > 0 do
+        let val1 <- 10;
+        while val1 > 8 do
             let val1 <- val1 - 1;
-            while val1 > 0 do
+            let val1 <- 5;
+            while val1 > 4 do
                 let val1 <- val1 - 1;
             od;
+            let val1 <- val1 - 1;
         od;
+        while val1 > 4 do
+            let val1 <- val1 - 1;
+        od;
+    od;
+    while val2 > 30 do
+        let val2 <- val2 - 1;
     od;
     let val3 <- val2 - 5;
 }.
