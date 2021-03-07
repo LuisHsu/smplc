@@ -19,11 +19,18 @@ void IRVisualizerPass::beforeAll(){
 }
 
 void IRVisualizerPass::afterAll(){
-    for(std::tuple<std::string, std::shared_ptr<IR::BasicBlock>, std::shared_ptr<IR::BasicBlock>>& relation : relations){
-        std::string from = bbNames[std::get<1>(relation)];
-        std::string to = bbNames[std::get<2>(relation)];
-        std::string label = std::get<0>(relation);
-        fileOut << from << " -> " << to << " [label=\"" << label << "\"];" << std::endl;
+    for(Relation& relation : relations){
+        fileOut << bbNames.at(relation.from) << " -> " << bbNames.at(relation.to);
+        if(!relation.props.empty()){
+            fileOut << " [";
+            for(auto it = relation.props.begin(); it != relation.props.end(); ++it){
+                fileOut << it->first << "=" << it->second;
+                if(std::next(it) != relation.props.end()){
+                    fileOut << ", ";
+                }
+            }
+            fileOut << "];" << std::endl;
+        }
     }
     fileOut << "\n}" << std::endl;
 }
@@ -47,10 +54,27 @@ void IRVisualizerPass::beforeVisit(std::shared_ptr<IR::BasicBlock>& target){
         << std::endl;
     bbNames[target] = bbName.str();
     if(target->fallThrough){
-        relations.emplace_back("fall-through", target, target->fallThrough);
+        Relation relation;
+        relation.from = target;
+        relation.to = target->fallThrough;
+        relation.props["label"] = "\"fall-through\"";
+        relations.push_back(relation);
     }
     if(target->branch){
-        relations.emplace_back("branch", target, target->branch);
+        Relation relation;
+        relation.from = target;
+        relation.to = target->branch;
+        relation.props["label"] = "\"branch\"";
+        relations.push_back(relation);
+    }
+    if(target->dominator){
+        Relation relation;
+        relation.from = target->dominator;
+        relation.to = target;
+        relation.props["label"] = "\"dom\"";
+        relation.props["color"] = "blue";
+        relation.props["style"] = "dotted";
+        relations.push_back(relation);
     }
 }
 

@@ -52,6 +52,7 @@ void IRGeneratorPass::beforeParse(Parser::StatSequence&){
     if(bbStack.empty()){
         blockMap[curFunc].root = bbStack.emplace(std::make_shared<IR::BasicBlock>());
     }else{
+        std::shared_ptr<IR::BasicBlock> dominate;
         bbStack.emplace(std::make_shared<IR::BasicBlock>());
     }
     if(varStack.empty()){
@@ -75,7 +76,6 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
         std::visit(overloaded {
             [](auto){},
             [&](Parser::Number& num){
-
                 exprStack.push(emitInstr<IR::Const>((int32_t) num.value).index);
             },
             [&](Parser::Designator& des){
@@ -190,6 +190,8 @@ void IRGeneratorPass::afterParse(Parser::IfStatement& target){
         previous->variableVal.swap(varStack.top());
         previous->fallThrough = elseBlock;
         previous->branch = thenBlock;
+        thenBlock->dominator = previous;
+        elseBlock->dominator = previous;
 
         // Branch instruction
         IR::index_t brachTo = IR::getInstrIndex(thenBlock->instructions.front());
@@ -223,6 +225,7 @@ void IRGeneratorPass::afterParse(Parser::IfStatement& target){
         elseBlock->instructions.emplace_back(IR::Bra(emitInstr<IR::Nop>().index));
         elseBlock->branch = nextBlock;
         thenBlock->fallThrough = nextBlock;
+        nextBlock->dominator = previous;
         
         // Phi functions
         for(std::pair<std::string, IR::TypeData>&& variable: blockMap.at(curFunc).variables){
@@ -275,10 +278,12 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
             bbStack.pop();
         }
         odBlock->fallThrough = cmpBlock;
+        cmpBlock->fallThrough->dominator = cmpBlock;
 
         std::shared_ptr<IR::BasicBlock> nextBlock = std::make_shared<IR::BasicBlock>();
         IR::index_t nextInstr = IR::getInstrIndex(nextBlock->instructions.emplace_back(IR::Nop()));
         cmpBlock->branch = nextBlock;
+        nextBlock->dominator = cmpBlock;
 
         // Branch instruction
         IR::index_t cmpOperand = exprStack.top();
@@ -307,6 +312,7 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
 
         std::shared_ptr<IR::BasicBlock> previous = bbStack.top();
         previous->fallThrough = cmpBlock;
+        cmpBlock->dominator = previous;
 
         // Phi functions
         std::vector<IR::Instrction> phis;

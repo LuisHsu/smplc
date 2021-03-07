@@ -13,9 +13,14 @@ public:
     IRVisualizerPass(std::string fileName);
 
 private:
+    struct Relation{
+        std::unordered_map<std::string, std::string> props;
+        std::shared_ptr<IR::BasicBlock> from;
+        std::shared_ptr<IR::BasicBlock> to;
+    };
     std::ofstream fileOut;
     std::unordered_map<std::shared_ptr<IR::BasicBlock>, std::string> bbNames;
-    std::list<std::tuple<std::string, std::shared_ptr<IR::BasicBlock>, std::shared_ptr<IR::BasicBlock>>> relations;
+    std::list<Relation> relations;
     size_t serialNum;
     std::string curFunc;
 
