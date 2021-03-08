@@ -129,9 +129,9 @@ void IRGeneratorPass::afterParse(Parser::Term& target){
                 operand2 = opStack.top();
                 opStack.pop();
                 if(factor.first == Parser::Term::Type::Divide){
-                    opStack.push(emitInstr<IR::Mul>(operand1, operand2).index);
-                }else{
                     opStack.push(emitInstr<IR::Div>(operand1, operand2).index);
+                }else{
+                    opStack.push(emitInstr<IR::Mul>(operand1, operand2).index);
                 }
             }
         }
