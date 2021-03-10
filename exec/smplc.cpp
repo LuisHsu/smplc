@@ -17,6 +17,7 @@
 #include <IRGeneratorPass.hpp>
 #include <IRVisualizerPass.hpp>
 #include <RemapPass.hpp>
+#include <CSEPass.hpp>
 
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
@@ -61,19 +62,26 @@ int main(int argc, char const *argv[]){
         IRGeneratorPass irGeneratorPass(blockMap);
         RemapPass remapPass;
         std::optional<IRVisualizerPass> irVisualizerPass;
+        CSEPass csePass;
+
         if(!arguments.parseOnly){
             parserPasses.emplace_back(irGeneratorPass);
             irPasses.emplace_back(remapPass);
+            if(arguments.withCSE){
+                irPasses.emplace_back(csePass);
+            }
             if(!arguments.irVisualizeFile.empty()){
                 irPasses.emplace_back(irVisualizerPass.emplace(arguments.irVisualizeFile));
             }
         }
+
         // Parse
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs(arguments.inputFiles[0]);
             return -1;
         }
-        // IR Passes
+
+        // Run IR passes
         for(std::reference_wrapper<IR::Pass> pass : irPasses){
             pass.get().traverse(blockMap);
             if(Logger::errorCount() > 0){

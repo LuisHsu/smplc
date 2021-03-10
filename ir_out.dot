@@ -1,0 +1,45 @@
+digraph {
+node [shape=plaintext]
+_main_1[label=<<table cellspacing="0" cellborder="0"><tr><td>_main_1 </td><vr/><td><table cellspacing="0" cellborder="0" border="0">
+	<tr><td>0: const #3</td></tr><hr/>
+	<tr><td>1: const #5</td></tr><hr/>
+	<tr><td>2: mul (0) (1)</td></tr><hr/>
+	<tr><td>3: const #2</td></tr><hr/>
+	<tr><td>4: add (2) (3)</td></tr><hr/>
+	<tr><td>6: cmp (4) (1)</td></tr><hr/>
+	<tr><td>21: bgt (6) :7</td></tr>
+</table></td></tr></table>>];
+
+_main_2[label=<<table cellspacing="0" cellborder="0"><tr><td>_main_2 </td><vr/><td><table cellspacing="0" cellborder="0" border="0">
+	<tr><td>16: const #6</td></tr><hr/>
+	<tr><td>18: mul (2) (16)</td></tr><hr/>
+	<tr><td>19: const #9</td></tr><hr/>
+	<tr><td>20: add (18) (19)</td></tr><hr/>
+	<tr><td>23: bra :22</td></tr>
+</table></td></tr></table>>];
+
+_main_3[label=<<table cellspacing="0" cellborder="0"><tr><td>_main_3 </td><vr/><td><table cellspacing="0" cellborder="0" border="0">
+	<tr><td>22: nop</td></tr><hr/>
+	<tr><td>24: phi (13) (20)</td></tr><hr/>
+	<tr><td>28: const #4</td></tr><hr/>
+	<tr><td>29: mul (28) (24)</td></tr><hr/>
+	<tr><td>30: sub (4) (2)</td></tr><hr/>
+	<tr><td>31: add (30) (29)</td></tr><hr/>
+	<tr><td>34: sub (31) (29)</td></tr>
+</table></td></tr></table>>];
+
+_main_4[label=<<table cellspacing="0" cellborder="0"><tr><td>_main_4 </td><vr/><td><table cellspacing="0" cellborder="0" border="0">
+	<tr><td>9: const #6</td></tr><hr/>
+	<tr><td>11: mul (2) (9)</td></tr><hr/>
+	<tr><td>13: add (11) (0)</td></tr>
+</table></td></tr></table>>];
+
+_main_1 -> _main_2 [label="fall-through"];
+_main_1 -> _main_4 [label="branch"];
+_main_2 -> _main_3 [label="branch"];
+_main_1 -> _main_2 [style=dotted, color=blue, label="dom"];
+_main_1 -> _main_3 [style=dotted, color=blue, label="dom"];
+_main_4 -> _main_3 [label="fall-through"];
+_main_1 -> _main_4 [style=dotted, color=blue, label="dom"];
+
+}

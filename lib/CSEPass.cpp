@@ -21,7 +21,7 @@ void CSEPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
     std::erase_if(target->instructions, [this](IR::Instrction& instr) -> bool {
         return removedSet.contains(IR::getInstrIndex(instr));
     });
-    if(target->branch){
+    if(target->branch && target->fallThrough){
         contextStack.emplace(contextStack.top());
     }
 }
@@ -67,6 +67,13 @@ void CSEPass::visit(IR::Mul& instr, std::shared_ptr<IR::BasicBlock>&){
     }
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
+    }
+    std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
+    if(context.mulMap.contains(operandPair)){
+        context.forward[instr.index] = context.mulMap.at(operandPair);
+        removedSet.insert(instr.index);
+    }else{
+        context.mulMap[operandPair] = instr.index;
     }
 }
 void CSEPass::visit(IR::Div& instr, std::shared_ptr<IR::BasicBlock>&){

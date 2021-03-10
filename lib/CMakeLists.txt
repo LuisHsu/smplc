@@ -9,5 +9,4 @@ add_library(smplc
     IRVisualizerPass.cpp
     RemapPass.cpp
     CSEPass.cpp
-    Util.cpp
 )
