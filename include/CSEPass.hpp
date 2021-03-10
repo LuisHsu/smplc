@@ -16,7 +16,8 @@ private:
     struct Context{
         std::unordered_map<IR::index_t, IR::index_t> forward;
         std::unordered_map<int32_t, IR::index_t> constMap;
-        std::map<std::pair<IR::index_t, IR::index_t>, IR::index_t> mulMap;
+        std::unordered_map<IR::index_t, IR::index_t> negMap;
+        std::map<std::pair<IR::index_t, IR::index_t>, IR::index_t> addMap, subMap, mulMap, divMap, cmpMap;
     };
 
     std::stack<Context> contextStack;

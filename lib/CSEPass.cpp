@@ -21,6 +21,20 @@ void CSEPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
     std::erase_if(target->instructions, [this](IR::Instrction& instr) -> bool {
         return removedSet.contains(IR::getInstrIndex(instr));
     });
+    if(target->fallThrough == target->dominator){
+        Context& context = contextStack.top();
+        for(IR::Instrction& instrRef : target->dominator->instructions){
+            if(std::holds_alternative<IR::Phi>(instrRef)){
+                IR::Phi& instr = std::get<IR::Phi>(instrRef);
+                if(context.forward.contains(instr.operand1)){
+                    instr.operand1 = context.forward[instr.operand1];
+                }
+                if(context.forward.contains(instr.operand2)){
+                    instr.operand2 = context.forward[instr.operand2];
+                }
+            }
+        }
+    }
     if(target->branch && target->fallThrough){
         contextStack.emplace(contextStack.top());
     }
@@ -41,6 +55,12 @@ void CSEPass::visit(IR::Neg& instr, std::shared_ptr<IR::BasicBlock>&){
     if(context.forward.contains(instr.operand)){
         instr.operand = context.forward[instr.operand];
     }
+    if(context.negMap.contains(instr.operand)){
+        context.forward[instr.index] = context.negMap.at(instr.operand);
+        removedSet.insert(instr.index);
+    }else{
+        context.negMap[instr.operand] = instr.index;
+    }
 }
 void CSEPass::visit(IR::Add& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();
@@ -50,6 +70,13 @@ void CSEPass::visit(IR::Add& instr, std::shared_ptr<IR::BasicBlock>&){
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
     }
+    std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
+    if(context.addMap.contains(operandPair)){
+        context.forward[instr.index] = context.addMap.at(operandPair);
+        removedSet.insert(instr.index);
+    }else{
+        context.addMap[operandPair] = instr.index;
+    }
 }
 void CSEPass::visit(IR::Sub& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();
@@ -58,6 +85,13 @@ void CSEPass::visit(IR::Sub& instr, std::shared_ptr<IR::BasicBlock>&){
     }
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
+    }
+    std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
+    if(context.subMap.contains(operandPair)){
+        context.forward[instr.index] = context.subMap.at(operandPair);
+        removedSet.insert(instr.index);
+    }else{
+        context.subMap[operandPair] = instr.index;
     }
 }
 void CSEPass::visit(IR::Mul& instr, std::shared_ptr<IR::BasicBlock>&){
@@ -84,6 +118,13 @@ void CSEPass::visit(IR::Div& instr, std::shared_ptr<IR::BasicBlock>&){
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
     }
+    std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
+    if(context.divMap.contains(operandPair)){
+        context.forward[instr.index] = context.divMap.at(operandPair);
+        removedSet.insert(instr.index);
+    }else{
+        context.divMap[operandPair] = instr.index;
+    }
 }
 void CSEPass::visit(IR::Cmp& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();
@@ -92,6 +133,13 @@ void CSEPass::visit(IR::Cmp& instr, std::shared_ptr<IR::BasicBlock>&){
     }
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
+    }
+    std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
+    if(context.cmpMap.contains(operandPair)){
+        context.forward[instr.index] = context.cmpMap.at(operandPair);
+        removedSet.insert(instr.index);
+    }else{
+        context.cmpMap[operandPair] = instr.index;
     }
 }
 void CSEPass::visit(IR::Adda& instr, std::shared_ptr<IR::BasicBlock>&){
