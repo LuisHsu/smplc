@@ -21,7 +21,7 @@ void CSEPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
     std::erase_if(target->instructions, [this](IR::Instrction& instr) -> bool {
         return removedSet.contains(IR::getInstrIndex(instr));
     });
-    if(target->fallThrough == target->dominator){
+    if(target->fallThrough && target->fallThrough == target->dominator){
         Context& context = contextStack.top();
         for(IR::Instrction& instrRef : target->dominator->instructions){
             if(std::holds_alternative<IR::Phi>(instrRef)){

@@ -28,6 +28,7 @@ public:
     void afterParse(Parser::Assignment&);
     void afterParse(Parser::Term&);
     void afterParse(Parser::Expression&);
+    void afterParse(Parser::Designator&);
     void afterParse(Parser::IfStatement&);
     void afterParse(Parser::Relation&);
     void afterParse(Parser::WhileStatement&);
@@ -40,6 +41,7 @@ private:
     std::stack<std::shared_ptr<IR::BasicBlock>> bbStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> whileStack;
     std::stack<IR::index_t> exprStack;
+    IR::address_t stackTop;
     template<typename T, typename... O> T& emitInstr(O...);
     std::string getFuncMsg();
 };

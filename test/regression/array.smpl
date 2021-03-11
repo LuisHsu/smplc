@@ -1,0 +1,13 @@
+main
+array [3] arr1;
+array [7][4] arr2;
+array [10][6][8] arr3;
+var val1, val2, val3;
+{
+    let arr1[2] <- 2;
+    let val1 <- arr1[2];
+    let arr2[5][1] <- 8;
+    let val2 <- arr2[5][1];
+    let arr3[4][2][6] <- 9;
+    let val3 <- arr3[4][2][6];
+}.

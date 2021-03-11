@@ -38,9 +38,17 @@ void IRGeneratorPass::afterParse(Parser::VarDecl& target){
                     newVar.shape.push_back(1);
                 }else if(target.typeDecl.declType == Parser::TypeDecl::Type::Array){
                     newVar.type = IR::TypeData::Type::Array;
+                    IR::address_t arrSize = INT_SIZE;
                     for(Parser::Number& size: target.typeDecl.arraySizes){
-                        newVar.shape.push_back(size.value);
+                        if(size.value <= 0){
+                            Logger::put(LogLevel::Error, std::string("invalid array size of '") + ident.value + "' in " + getFuncMsg());
+                        }else{
+                            newVar.shape.push_back(size.value);
+                            arrSize *= size.value;
+                        }
                     }
+                    newVar.address = stackTop;
+                    stackTop += arrSize;
                 }
                 varMap.insert({ident.value, newVar});
             }
@@ -81,18 +89,25 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
             [&](Parser::Designator& des){
                 std::string& identName = des.identifier.value;
                 std::unordered_map<std::string, IR::TypeData>& varMap = blockMap.at(curFunc).variables;
-                if(varMap.find(identName) == varMap.end()){
-                    Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
-                }else{
-                    std::unordered_map<std::string, IR::index_t>::iterator valIt = varStack.top().find(identName);
-                    if(valIt == varStack.top().end()){
-                        // Uninitialized
-                        Logger::put(LogLevel::Warning, std::string("uninitialized variable '") + identName + "' in " + getFuncMsg());
-                        IR::Const& instr = emitInstr<IR::Const>((int32_t) 0);
-                        exprStack.push(instr.index);
-                        varStack.top().emplace(identName, instr.index);
+                if(varMap.find(identName) != varMap.end()){
+                    IR::TypeData varType = varMap[identName];
+                    if(varType.type == IR::TypeData::Type::Var){
+                        // Variable
+                        std::unordered_map<std::string, IR::index_t>::iterator valIt = varStack.top().find(identName);
+                        if(valIt == varStack.top().end()){
+                            // Uninitialized
+                            Logger::put(LogLevel::Warning, std::string("uninitialized variable '") + identName + "' in " + getFuncMsg());
+                            IR::Const& instr = emitInstr<IR::Const>((int32_t) 0);
+                            exprStack.push(instr.index);
+                            varStack.top().emplace(identName, instr.index);
+                        }else{
+                            exprStack.push(valIt->second);
+                        }
                     }else{
-                        exprStack.push(valIt->second);
+                        // Array
+                        IR::index_t address = exprStack.top();
+                        exprStack.pop();
+                        exprStack.push(emitInstr<IR::Load>(address).index);
                     }
                 }
             },
@@ -102,14 +117,22 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
 
 void IRGeneratorPass::afterParse(Parser::Assignment& target){
     if(target.isSuccess){
-        IR::index_t resultIndex = exprStack.top();
+        IR::index_t result = exprStack.top();
         exprStack.pop();
         std::string& identName = target.designator.identifier.value;
         std::unordered_map<std::string, IR::TypeData>& varMap = blockMap.at(curFunc).variables;
         if(varMap.find(identName) == varMap.end()){
             Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
         }else{
-            varStack.top()[identName] = resultIndex;
+            if(varMap.at(identName).type == IR::TypeData::Type::Var){
+                // Variable
+                varStack.top()[identName] = result;
+            }else{
+                // Array
+                IR::index_t address = exprStack.top();
+                exprStack.pop();
+                exprStack.push(emitInstr<IR::Store>(result, address).index);
+            }
         }
     }
 }
@@ -166,6 +189,7 @@ void IRGeneratorPass::afterParse(Parser::Expression& target){
 
 void IRGeneratorPass::beforeParse(Parser::Computation&){
     curFunc = "_main";
+    stackTop = 0;
     blockMap.emplace(curFunc, IR::BlockEntry());
 }
 
@@ -348,6 +372,45 @@ void IRGeneratorPass::afterParse(Parser::Computation& target){
             }
         }
     }else{
-        bbStack.pop();
+        if(!bbStack.empty()){
+            bbStack.pop();
+        }
+    }
+}
+
+void IRGeneratorPass::afterParse(Parser::Designator& target){
+    if(target.isSuccess){
+        std::string& identName = target.identifier.value;
+        std::unordered_map<std::string, IR::TypeData>& varMap = blockMap.at(curFunc).variables;
+        if(varMap.contains(identName)){
+            IR::TypeData& varType = varMap.at(identName);         
+            if(varType.type == IR::TypeData::Type::Array){
+                std::unordered_map<std::string, IR::index_t>::iterator valIt = varStack.top().find(identName);
+                IR::index_t address;
+                if(valIt == varStack.top().end()){
+                    address = emitInstr<IR::Add>(IR::Register::fp, emitInstr<IR::Const>(*(varType.address)).index).index;
+                    varStack.top()[identName] = address;
+                }else{
+                    address = varStack.top().at(identName);
+                }
+                IR::index_t offset;
+                int32_t accSize = INT_SIZE;
+                for(size_t i = varType.shape.size(); i > 0; --i){
+                    if(i <= target.expressions.size()){
+                        IR::Mul& mulInstr = emitInstr<IR::Mul>(exprStack.top(), emitInstr<IR::Const>(accSize).index);
+                        exprStack.pop();
+                        if(i != target.expressions.size()){
+                            offset = emitInstr<IR::Add>(offset, mulInstr.index).index;
+                        }else{
+                            offset = mulInstr.index;
+                        }
+                    }
+                    accSize *= varType.shape[i - 1];
+                }
+                exprStack.push(emitInstr<IR::Adda>(address, offset).index);
+            }
+        }else{
+            Logger::put(LogLevel::Error, std::string("undeclared identifier '") + identName + "' in " + getFuncMsg());
+        }
     }
 }

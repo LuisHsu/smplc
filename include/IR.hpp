@@ -12,6 +12,13 @@
 namespace IR{
 
 using index_t = unsigned long long int;
+using address_t = int32_t;
+
+#define INT_SIZE 4
+
+enum Register{
+    fp = 0,
+};
 
 enum class Operation{
     Nop,
@@ -138,6 +145,7 @@ struct TypeData{
     };
     Type type;
     std::vector<size_t> shape;
+    std::optional<address_t> address;
 };
 struct BlockEntry{
     std::shared_ptr<BasicBlock> root;

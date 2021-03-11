@@ -10,7 +10,7 @@
 #include <memory>
 
 IR::InstrBase::InstrBase(){
-    static IR::index_t newId = 0;
+    static IR::index_t newId = 1;
     index = newId++;
 }
 

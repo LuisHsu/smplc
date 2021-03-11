@@ -1,0 +1,5 @@
+main
+array [0] arr1;
+{
+    let arr1[1] <- 2;
+}.
