@@ -143,7 +143,20 @@ void CSEPass::visit(IR::Cmp& instr, std::shared_ptr<IR::BasicBlock>&){
     }
 }
 void CSEPass::visit(IR::Adda& instr, std::shared_ptr<IR::BasicBlock>&){
-    // TODO:
+    Context& context = contextStack.top();
+    if(context.forward.contains(instr.operand1)){
+        instr.operand1 = context.forward[instr.operand1];
+    }
+    if(context.forward.contains(instr.operand2)){
+        instr.operand2 = context.forward[instr.operand2];
+    }
+    std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
+    if(context.addaMap.contains(operandPair)){
+        context.forward[instr.index] = context.addaMap.at(operandPair);
+        removedSet.insert(instr.index);
+    }else{
+        context.addaMap[operandPair] = instr.index;
+    }
 }
 void CSEPass::visit(IR::Load& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();

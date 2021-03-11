@@ -17,7 +17,7 @@ private:
         std::unordered_map<IR::index_t, IR::index_t> forward;
         std::unordered_map<int32_t, IR::index_t> constMap;
         std::unordered_map<IR::index_t, IR::index_t> negMap;
-        std::map<std::pair<IR::index_t, IR::index_t>, IR::index_t> addMap, subMap, mulMap, divMap, cmpMap;
+        std::map<std::pair<IR::index_t, IR::index_t>, IR::index_t> addMap, subMap, mulMap, divMap, cmpMap, addaMap;
     };
 
     std::stack<Context> contextStack;
