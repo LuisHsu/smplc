@@ -106,8 +106,9 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
                     }else{
                         // Array
                         IR::index_t address = exprStack.top();
+                        IR::index_t loadIdx = emitInstr<IR::Load>(address).index;
                         exprStack.pop();
-                        exprStack.push(emitInstr<IR::Load>(address).index);
+                        exprStack.push(loadIdx);
                     }
                 }
             },
@@ -253,19 +254,21 @@ void IRGeneratorPass::afterParse(Parser::IfStatement& target){
         
         // Phi functions
         for(std::pair<std::string, IR::TypeData>&& variable: blockMap.at(curFunc).variables){
-            if(thenBlock->variableVal.contains(variable.first)){
-                if(elseBlock->variableVal.contains(variable.first)){
-                    if(thenBlock->variableVal[variable.first] != elseBlock->variableVal[variable.first]){
-                        varStack.top()[variable.first] = emitInstr<IR::Phi>(thenBlock->variableVal[variable.first], elseBlock->variableVal[variable.first]).index;
+            if(variable.second.type == IR::TypeData::Type::Var){
+                if(thenBlock->variableVal.contains(variable.first)){
+                    if(elseBlock->variableVal.contains(variable.first)){
+                        if(thenBlock->variableVal[variable.first] != elseBlock->variableVal[variable.first]){
+                            varStack.top()[variable.first] = emitInstr<IR::Phi>(thenBlock->variableVal[variable.first], elseBlock->variableVal[variable.first]).index;
+                        }else{
+                            varStack.top()[variable.first] = thenBlock->variableVal[variable.first];
+                        }
                     }else{
-                        varStack.top()[variable.first] = thenBlock->variableVal[variable.first];
+                        varStack.top()[variable.first] = emitInstr<IR::Phi>(thenBlock->variableVal[variable.first], emitInstr<IR::Nop>().index).index;
                     }
                 }else{
-                    varStack.top()[variable.first] = emitInstr<IR::Phi>(thenBlock->variableVal[variable.first], emitInstr<IR::Nop>().index).index;
-                }
-            }else{
-                if(elseBlock->variableVal.contains(variable.first)){
-                    varStack.top()[variable.first] = emitInstr<IR::Phi>(emitInstr<IR::Nop>().index, elseBlock->variableVal[variable.first]).index;
+                    if(elseBlock->variableVal.contains(variable.first)){
+                        varStack.top()[variable.first] = emitInstr<IR::Phi>(emitInstr<IR::Nop>().index, elseBlock->variableVal[variable.first]).index;
+                    }
                 }
             }
         }
@@ -341,17 +344,19 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
         // Phi functions
         std::vector<IR::Instrction> phis;
         for(std::pair<std::string, IR::index_t>&& variable: odBlock->variableVal){
-            if(previous->variableVal.contains(variable.first)){
-                if(previous->variableVal.at(variable.first) != variable.second){
-                    IR::index_t origin = previous->variableVal.at(variable.first);
-                    IR::index_t phiIndex = IR::getInstrIndex(phis.emplace_back(IR::Phi(origin, variable.second)));
-                    cmpBlock->relocateMap[origin] = phiIndex;
-                    varStack.top()[variable.first] = phiIndex;
+            if(blockMap[curFunc].variables[variable.first].type == IR::TypeData::Type::Var){
+                if(previous->variableVal.contains(variable.first)){
+                    if(previous->variableVal.at(variable.first) != variable.second){
+                        IR::index_t origin = previous->variableVal.at(variable.first);
+                        IR::index_t phiIndex = IR::getInstrIndex(phis.emplace_back(IR::Phi(origin, variable.second)));
+                        cmpBlock->relocateMap[origin] = phiIndex;
+                        varStack.top()[variable.first] = phiIndex;
+                    }else{
+                        varStack.top()[variable.first] = variable.second;
+                    }
                 }else{
                     varStack.top()[variable.first] = variable.second;
                 }
-            }else{
-                varStack.top()[variable.first] = variable.second;
             }
         }
         cmpBlock->instructions.insert(cmpBlock->instructions.begin(), phis.begin(), phis.end());

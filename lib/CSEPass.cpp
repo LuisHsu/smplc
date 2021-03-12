@@ -35,8 +35,12 @@ void CSEPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
             }
         }
     }
-    if(target->branch && target->fallThrough){
-        contextStack.emplace(contextStack.top());
+    if(target->branch){
+        if(target->fallThrough){
+            contextStack.emplace(contextStack.top());
+        }else{
+            contextStack.top().loadMap.clear();
+        }
     }
 }
 
@@ -156,12 +160,19 @@ void CSEPass::visit(IR::Adda& instr, std::shared_ptr<IR::BasicBlock>&){
         removedSet.insert(instr.index);
     }else{
         context.addaMap[operandPair] = instr.index;
+        context.addressMap[instr.index] = instr.operand1;
     }
 }
 void CSEPass::visit(IR::Load& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();
     if(context.forward.contains(instr.operand)){
         instr.operand = context.forward[instr.operand];
+    }
+    if(context.loadMap.contains(instr.operand)){
+        context.forward[instr.index] = context.loadMap.at(instr.operand);
+        removedSet.insert(instr.index);
+    }else{
+        context.loadMap[instr.operand] = instr.index;
     }
 }
 void CSEPass::visit(IR::Store& instr, std::shared_ptr<IR::BasicBlock>&){
@@ -171,7 +182,14 @@ void CSEPass::visit(IR::Store& instr, std::shared_ptr<IR::BasicBlock>&){
     }
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
+    }/*
+    std::unordered_map<IR::index_t, IR::index_t> newLoadMap;
+    for(std::pair<IR::index_t, IR::index_t>&& entry : contextStack.top().loadMap){
+        if(contextStack.top().addressMap.at(entry.first) != contextStack.top().addressMap.at(instr.operand2)){
+            newLoadMap.emplace(entry);
+        }
     }
+    contextStack.top().loadMap.swap(newLoadMap);*/
 }
 void CSEPass::visit(IR::Phi& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();

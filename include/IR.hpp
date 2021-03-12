@@ -136,6 +136,7 @@ struct BasicBlock{
     std::vector<Instrction> instructions;
     std::shared_ptr<BasicBlock> branch, fallThrough, dominator;
     std::unordered_map<std::string, IR::index_t> variableVal;
+    std::unordered_map<IR::index_t, IR::index_t> arrayVal;
     std::unordered_map<IR::index_t, IR::index_t> relocateMap;
 };
 
