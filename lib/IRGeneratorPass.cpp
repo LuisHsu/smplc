@@ -375,6 +375,7 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
 
 void IRGeneratorPass::afterParse(Parser::Computation& target){
     if(target.isSuccess){
+        emitInstr<IR::End>();
         std::unordered_map<std::string, IR::index_t>& usedVariables = bbStack.top()->variableVal;
         for(auto&& varPair : curEntry->variables){
             if(!usedVariables.contains(varPair.first)){
