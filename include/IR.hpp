@@ -151,17 +151,19 @@ struct TypeData{
 struct BlockEntry{
     std::shared_ptr<BasicBlock> root;
     std::unordered_map<std::string, TypeData> variables;
+    std::unordered_map<std::string, address_t> parameters;
+    bool isVoid;
 };
 
 class Pass{
 public:
-    virtual void traverse(std::unordered_map<std::string, BlockEntry>& blockMap);
+    virtual void traverse(std::unordered_map<std::string, std::shared_ptr<BlockEntry>>& blockMap);
 
 protected:
     virtual void beforeAll();
     virtual void afterAll();
-    virtual void beforeVisit(const std::string&, BlockEntry&);
-    virtual void afterVisit(const std::string&, BlockEntry&);
+    virtual void beforeVisit(const std::string&, std::shared_ptr<BlockEntry>&);
+    virtual void afterVisit(const std::string&, std::shared_ptr<BlockEntry>&);
     virtual void beforeVisit(std::shared_ptr<BasicBlock>&);
     virtual void afterVisit(std::shared_ptr<BasicBlock>&);
     virtual void visit(Nop&, std::shared_ptr<IR::BasicBlock>&);

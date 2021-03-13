@@ -32,14 +32,14 @@ void IRVisualizerPass::afterAll(){
             fileOut << "];" << std::endl;
         }
     }
-    fileOut << "\n}" << std::endl;
+    fileOut << "}" << std::endl;
 }
 
-void IRVisualizerPass::beforeVisit(const std::string& funcName, IR::BlockEntry&){
+void IRVisualizerPass::beforeVisit(const std::string& funcName, std::shared_ptr<IR::BlockEntry>&){
     curFunc = funcName;
 }
 
-void IRVisualizerPass::afterVisit(const std::string&, IR::BlockEntry&){
+void IRVisualizerPass::afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){
     serialNum = 0;
 }
 
@@ -79,6 +79,9 @@ void IRVisualizerPass::beforeVisit(std::shared_ptr<IR::BasicBlock>& target){
 }
 
 void IRVisualizerPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
+    if(target->instructions.empty()){
+        fileOut << "\t<tr><td></td></tr>\n";
+    }
     fileOut << "</table></td></tr></table>>];\n" << std::endl;
 }
 

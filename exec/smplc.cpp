@@ -53,7 +53,7 @@ int main(int argc, char const *argv[]){
         // Create passes
         std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
         std::vector<std::reference_wrapper<IR::Pass>> irPasses;
-        std::unordered_map<std::string, IR::BlockEntry> blockMap;
+        std::unordered_map<std::string, std::shared_ptr<IR::BlockEntry>> blockMap;
 
         PrintPass printPass;
         if(arguments.parserDebug){

@@ -22,8 +22,8 @@ const IR::index_t IR::getInstrIndex(const IR::Instrction& instr){
 
 void IR::Pass::beforeAll(){}
 void IR::Pass::afterAll(){}
-void IR::Pass::beforeVisit(const std::string&, IR::BlockEntry&){}
-void IR::Pass::afterVisit(const std::string&, IR::BlockEntry&){}
+void IR::Pass::beforeVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){}
+void IR::Pass::afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){}
 void IR::Pass::beforeVisit(std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::afterVisit(std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Nop&, std::shared_ptr<IR::BasicBlock>&){}
@@ -50,15 +50,15 @@ void IR::Pass::visit(IR::Read&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Write&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::WriteNL&, std::shared_ptr<IR::BasicBlock>&){}
 
-void IR::Pass::traverse(std::unordered_map<std::string, IR::BlockEntry>& blockMap){
+void IR::Pass::traverse(std::unordered_map<std::string, std::shared_ptr<IR::BlockEntry>>& blockMap){
     beforeAll();
-    for(std::pair<const std::string, IR::BlockEntry>& blockPair : blockMap){
+    for(std::pair<const std::string, std::shared_ptr<IR::BlockEntry>>& blockPair : blockMap){
         beforeVisit(blockPair.first, blockPair.second);
-        if(blockPair.second.root){
+        if(blockPair.second->root){
             std::stack<std::shared_ptr<IR::BasicBlock>> blockStack;
             std::set<std::shared_ptr<IR::BasicBlock>> traversedSet;
-            blockStack.push(blockPair.second.root);
-            traversedSet.emplace(blockPair.second.root);
+            blockStack.push(blockPair.second->root);
+            traversedSet.emplace(blockPair.second->root);
             while(!blockStack.empty()){
                 std::shared_ptr<IR::BasicBlock> block = blockStack.top();
                 blockStack.pop();

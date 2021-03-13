@@ -182,14 +182,15 @@ void CSEPass::visit(IR::Store& instr, std::shared_ptr<IR::BasicBlock>&){
     }
     if(context.forward.contains(instr.operand2)){
         instr.operand2 = context.forward[instr.operand2];
-    }/*
+    }
     std::unordered_map<IR::index_t, IR::index_t> newLoadMap;
     for(std::pair<IR::index_t, IR::index_t>&& entry : contextStack.top().loadMap){
-        if(contextStack.top().addressMap.at(entry.first) != contextStack.top().addressMap.at(instr.operand2)){
+        std::unordered_map<IR::index_t, IR::index_t>& addressMap = contextStack.top().addressMap;
+        if(!addressMap.contains(entry.first) || (addressMap.at(entry.first) != contextStack.top().addressMap.at(instr.operand2))){
             newLoadMap.emplace(entry);
         }
     }
-    contextStack.top().loadMap.swap(newLoadMap);*/
+    contextStack.top().loadMap.swap(newLoadMap);
 }
 void CSEPass::visit(IR::Phi& instr, std::shared_ptr<IR::BasicBlock>&){
     Context& context = contextStack.top();
@@ -241,4 +242,8 @@ void CSEPass::visit(IR::Write& instr, std::shared_ptr<IR::BasicBlock>&){
     if(context.forward.contains(instr.operand)){
         instr.operand = context.forward[instr.operand];
     }
+}
+void CSEPass::afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){
+    contextStack = std::stack<CSEPass::Context>();
+    removedSet.clear();
 }

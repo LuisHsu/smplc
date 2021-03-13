@@ -26,6 +26,7 @@ private:
     
     void beforeVisit(std::shared_ptr<IR::BasicBlock>&);
     void afterVisit(std::shared_ptr<IR::BasicBlock>&);
+    void afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&);
     
     void visit(IR::Const&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Neg&, std::shared_ptr<IR::BasicBlock>&);

@@ -1,0 +1,13 @@
+main
+var val1;
+void function func1 (param1, param2);
+var val1, val2;
+array [2] arr1;
+{
+    let arr1[1] <- 5;
+    let val2 <- param1 + 3;
+    let val1 <- arr1[1] - 4;
+};
+{
+    let val1 <- 5;
+}.

@@ -26,8 +26,8 @@ private:
 
     void beforeAll();
     void afterAll();
-    void beforeVisit(const std::string&, IR::BlockEntry&);
-    void afterVisit(const std::string&, IR::BlockEntry&);
+    void beforeVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&);
+    void afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&);
     void beforeVisit(std::shared_ptr<IR::BasicBlock>&);
     void afterVisit(std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Nop&, std::shared_ptr<IR::BasicBlock>&);
