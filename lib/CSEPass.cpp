@@ -46,7 +46,7 @@ void CSEPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
 
 void CSEPass::visit(IR::Const& instr, std::shared_ptr<IR::BasicBlock>& block){
     Context& context = contextStack.top();
-    if(context.constMap.contains(instr.value)){
+    if(!instr.isImportant && context.constMap.contains(instr.value)){
         context.forward[instr.index] = context.constMap.at(instr.value);
         removedSet.insert(instr.index);
     }else{
@@ -59,7 +59,7 @@ void CSEPass::visit(IR::Neg& instr, std::shared_ptr<IR::BasicBlock>&){
     if(context.forward.contains(instr.operand)){
         instr.operand = context.forward[instr.operand];
     }
-    if(context.negMap.contains(instr.operand)){
+    if(!instr.isImportant && context.negMap.contains(instr.operand)){
         context.forward[instr.index] = context.negMap.at(instr.operand);
         removedSet.insert(instr.index);
     }else{
@@ -75,7 +75,7 @@ void CSEPass::visit(IR::Add& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand2 = context.forward[instr.operand2];
     }
     std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
-    if(context.addMap.contains(operandPair)){
+    if(!instr.isImportant && context.addMap.contains(operandPair)){
         context.forward[instr.index] = context.addMap.at(operandPair);
         removedSet.insert(instr.index);
     }else{
@@ -91,7 +91,7 @@ void CSEPass::visit(IR::Sub& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand2 = context.forward[instr.operand2];
     }
     std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
-    if(context.subMap.contains(operandPair)){
+    if(!instr.isImportant && context.subMap.contains(operandPair)){
         context.forward[instr.index] = context.subMap.at(operandPair);
         removedSet.insert(instr.index);
     }else{
@@ -107,7 +107,7 @@ void CSEPass::visit(IR::Mul& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand2 = context.forward[instr.operand2];
     }
     std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
-    if(context.mulMap.contains(operandPair)){
+    if(!instr.isImportant && context.mulMap.contains(operandPair)){
         context.forward[instr.index] = context.mulMap.at(operandPair);
         removedSet.insert(instr.index);
     }else{
@@ -123,7 +123,7 @@ void CSEPass::visit(IR::Div& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand2 = context.forward[instr.operand2];
     }
     std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
-    if(context.divMap.contains(operandPair)){
+    if(!instr.isImportant && context.divMap.contains(operandPair)){
         context.forward[instr.index] = context.divMap.at(operandPair);
         removedSet.insert(instr.index);
     }else{
@@ -139,7 +139,7 @@ void CSEPass::visit(IR::Cmp& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand2 = context.forward[instr.operand2];
     }
     std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
-    if(context.cmpMap.contains(operandPair)){
+    if(!instr.isImportant && context.cmpMap.contains(operandPair)){
         context.forward[instr.index] = context.cmpMap.at(operandPair);
         removedSet.insert(instr.index);
     }else{
@@ -155,7 +155,7 @@ void CSEPass::visit(IR::Adda& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand2 = context.forward[instr.operand2];
     }
     std::pair<IR::index_t, IR::index_t> operandPair = std::make_pair(instr.operand1, instr.operand2);
-    if(context.addaMap.contains(operandPair)){
+    if(!instr.isImportant && context.addaMap.contains(operandPair)){
         context.forward[instr.index] = context.addaMap.at(operandPair);
         removedSet.insert(instr.index);
     }else{
@@ -168,7 +168,7 @@ void CSEPass::visit(IR::Load& instr, std::shared_ptr<IR::BasicBlock>&){
     if(context.forward.contains(instr.operand)){
         instr.operand = context.forward[instr.operand];
     }
-    if(context.loadMap.contains(instr.operand)){
+    if(!instr.isImportant && context.loadMap.contains(instr.operand)){
         context.forward[instr.index] = context.loadMap.at(instr.operand);
         removedSet.insert(instr.index);
     }else{
@@ -243,7 +243,13 @@ void CSEPass::visit(IR::Write& instr, std::shared_ptr<IR::BasicBlock>&){
         instr.operand = context.forward[instr.operand];
     }
 }
-void CSEPass::afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){
+void CSEPass::afterVisit(const std::string&, std::shared_ptr<IR::FuncEntry>&){
     contextStack = std::stack<CSEPass::Context>();
     removedSet.clear();
+}
+void CSEPass::visit(IR::StoreReg& instr, std::shared_ptr<IR::BasicBlock>&){
+    Context& context = contextStack.top();
+    if(context.forward.contains(instr.operand2)){
+        instr.operand2 = context.forward[instr.operand2];
+    }
 }

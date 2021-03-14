@@ -1,6 +1,6 @@
 main
 var val1;
-void function func1 (param1, param2);
+void function func1 (param1);
 var val1, val2;
 array [2] arr1;
 {
@@ -10,4 +10,5 @@ array [2] arr1;
 };
 {
     let val1 <- 5;
+    call func1(12);
 }.

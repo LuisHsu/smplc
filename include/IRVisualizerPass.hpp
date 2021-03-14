@@ -26,8 +26,8 @@ private:
 
     void beforeAll();
     void afterAll();
-    void beforeVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&);
-    void afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&);
+    void beforeVisit(const std::string&, std::shared_ptr<IR::FuncEntry>&);
+    void afterVisit(const std::string&, std::shared_ptr<IR::FuncEntry>&);
     void beforeVisit(std::shared_ptr<IR::BasicBlock>&);
     void afterVisit(std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Nop&, std::shared_ptr<IR::BasicBlock>&);
@@ -35,6 +35,7 @@ private:
     void visit(IR::Neg&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Add&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Sub&, std::shared_ptr<IR::BasicBlock>&);
+    void visit(IR::StoreReg&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Mul&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Div&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Cmp&, std::shared_ptr<IR::BasicBlock>&);

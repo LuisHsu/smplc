@@ -13,6 +13,21 @@ IRVisualizerPass::IRVisualizerPass(std::string fileName) :
     fileOut(fileName, std::ios::out), serialNum(0)
 {}
 
+static std::string formatOperand(IR::index_t index){
+    std::stringstream message;
+    switch (index){
+    case IR::Register::fp :
+        return "(FP)";
+    case IR::Register::pc :
+        return "(PC)";
+    case IR::Register::rval :
+        return "(RVal)";
+    default:
+        message << "(" << index << ")";
+        return message.str();
+    }
+}
+
 void IRVisualizerPass::beforeAll(){
     fileOut << "digraph {" << std::endl;
     fileOut << "node [shape=plaintext]" << std::endl;
@@ -35,12 +50,26 @@ void IRVisualizerPass::afterAll(){
     fileOut << "}" << std::endl;
 }
 
-void IRVisualizerPass::beforeVisit(const std::string& funcName, std::shared_ptr<IR::BlockEntry>&){
+void IRVisualizerPass::beforeVisit(const std::string& funcName, std::shared_ptr<IR::FuncEntry>&){
     curFunc = funcName;
 }
 
-void IRVisualizerPass::afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){
+void IRVisualizerPass::afterVisit(const std::string& funcName, std::shared_ptr<IR::FuncEntry>& entry){
     serialNum = 0;
+    static size_t linkSerial = 1;
+    for(IR::FuncCallLink& link : entry->callLinks){
+        fileOut << "__link" << linkSerial
+            << "[shape=note,label=< call " << link.funcName;
+        for(std::pair<std::string, IR::index_t>& param : link.params){
+            fileOut << "<br/>" << param.first << ": " << formatOperand(param.second);
+        }
+        fileOut << " >];" << std::endl;
+        fileOut << bbNames[link.block] << ":i" << link.callIndex
+            << " -> " << "__link" << linkSerial
+            << " -> " << link.funcName << "_1"
+            << ";" << std::endl;
+        linkSerial += 1;
+    }
 }
 
 void IRVisualizerPass::beforeVisit(std::shared_ptr<IR::BasicBlock>& target){
@@ -86,22 +115,11 @@ void IRVisualizerPass::afterVisit(std::shared_ptr<IR::BasicBlock>& target){
 }
 
 static void outputInstr(std::string message, std::ofstream& fileOut, IR::index_t index, std::shared_ptr<IR::BasicBlock>& block){
-    fileOut << "\t<tr><td>" << index << ": " << message << "</td></tr>";
+    fileOut << "\t<tr><td PORT=\"i" << index << "\">" << index << ": " << message << "</td></tr>";
     if(index != IR::getInstrIndex(block->instructions.back())){
         fileOut << "<hr/>";
     }
     fileOut << std::endl;
-}
-
-static std::string formatOperand(IR::index_t index){
-    std::stringstream message;
-    switch (index){
-    case IR::Register::fp :
-        return "(FP)";
-    default:
-        message << "(" << index << ")";
-        return message.str();
-    }
 }
 
 void IRVisualizerPass::visit(IR::Nop& target, std::shared_ptr<IR::BasicBlock>& block){
@@ -127,6 +145,12 @@ void IRVisualizerPass::visit(IR::Add& target, std::shared_ptr<IR::BasicBlock>& b
 void IRVisualizerPass::visit(IR::Sub& target, std::shared_ptr<IR::BasicBlock>& block){
     outputInstr(
         std::string("sub ") + formatOperand(target.operand1) + " " + formatOperand(target.operand2),
+        fileOut, target.index, block
+    );
+}
+void IRVisualizerPass::visit(IR::StoreReg& target, std::shared_ptr<IR::BasicBlock>& block){
+    outputInstr(
+        std::string("storereg ") + formatOperand(target.operand1) + " " + formatOperand(target.operand2),
         fileOut, target.index, block
     );
 }

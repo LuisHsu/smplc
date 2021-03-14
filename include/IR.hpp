@@ -17,12 +17,15 @@ using address_t = int32_t;
 #define INT_SIZE 4
 
 enum Register{
-    fp = 0,
+    pc = 0,
+    fp = 1,
+    rval = 2,
 };
 
 enum class Operation{
     Nop,
     Const,
+    StoreReg,
     Neg,
     Add,
     Sub,
@@ -48,6 +51,7 @@ enum class Operation{
 
 struct InstrBase{
     index_t index;
+    bool isImportant;
     InstrBase();
 };
 
@@ -91,6 +95,7 @@ using Bra = Instr<Operation::Bra, index_t>;
 using Write = Instr<Operation::Write, index_t>;
 using Add = Instr<Operation::Add, index_t, index_t>;
 using Sub = Instr<Operation::Sub, index_t, index_t>;
+using StoreReg = Instr<Operation::StoreReg, index_t, index_t>;
 using Mul = Instr<Operation::Mul, index_t, index_t>;
 using Div = Instr<Operation::Div, index_t, index_t>;
 using Cmp = Instr<Operation::Cmp, index_t, index_t>;
@@ -110,6 +115,7 @@ using Instrction = std::variant<
     Neg,
     Add,
     Sub,
+    StoreReg,
     Mul,
     Div,
     Cmp,
@@ -135,9 +141,9 @@ const index_t getInstrIndex(const Instrction&);
 struct BasicBlock{
     std::vector<Instrction> instructions;
     std::shared_ptr<BasicBlock> branch, fallThrough, dominator;
-    std::unordered_map<std::string, IR::index_t> variableVal;
-    std::unordered_map<IR::index_t, IR::index_t> arrayVal;
-    std::unordered_map<IR::index_t, IR::index_t> relocateMap;
+    std::unordered_map<std::string, index_t> variableVal;
+    std::unordered_map<index_t, index_t> arrayVal;
+    std::unordered_map<index_t, index_t> relocateMap;
 };
 
 struct TypeData{
@@ -148,47 +154,56 @@ struct TypeData{
     std::vector<size_t> shape;
     std::optional<address_t> address;
 };
-struct BlockEntry{
+struct FuncCallLink{
+    std::string funcName;
+    index_t callIndex;
+    std::shared_ptr<BasicBlock> block;
+    std::vector<std::pair<std::string, index_t>> params;
+};
+struct FuncEntry{
     std::shared_ptr<BasicBlock> root;
     std::unordered_map<std::string, TypeData> variables;
-    std::unordered_map<std::string, address_t> parameters;
+    std::unordered_map<std::string, address_t> paramAddrMap;
+    std::vector<std::string> paramNames;
+    std::vector<FuncCallLink> callLinks;
     bool isVoid;
 };
 
 class Pass{
 public:
-    virtual void traverse(std::unordered_map<std::string, std::shared_ptr<BlockEntry>>& blockMap);
+    virtual void traverse(std::unordered_map<std::string, std::shared_ptr<FuncEntry>>& funcMap);
 
 protected:
     virtual void beforeAll();
     virtual void afterAll();
-    virtual void beforeVisit(const std::string&, std::shared_ptr<BlockEntry>&);
-    virtual void afterVisit(const std::string&, std::shared_ptr<BlockEntry>&);
+    virtual void beforeVisit(const std::string&, std::shared_ptr<FuncEntry>&);
+    virtual void afterVisit(const std::string&, std::shared_ptr<FuncEntry>&);
     virtual void beforeVisit(std::shared_ptr<BasicBlock>&);
     virtual void afterVisit(std::shared_ptr<BasicBlock>&);
-    virtual void visit(Nop&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Const&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Neg&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Add&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Sub&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Mul&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Div&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Cmp&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Adda&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Load&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Store&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Phi&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(End&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Bra&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Bne&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Beq&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Ble&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Blt&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Bge&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Bgt&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Read&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(Write&, std::shared_ptr<IR::BasicBlock>&);
-    virtual void visit(WriteNL&, std::shared_ptr<IR::BasicBlock>&);
+    virtual void visit(Nop&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Const&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Neg&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Add&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Sub&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(StoreReg&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Mul&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Div&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Cmp&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Adda&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Load&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Store&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Phi&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(End&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Bra&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Bne&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Beq&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Ble&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Blt&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Bge&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Bgt&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Read&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(Write&, std::shared_ptr<BasicBlock>&);
+    virtual void visit(WriteNL&, std::shared_ptr<BasicBlock>&);
 };
 
 };

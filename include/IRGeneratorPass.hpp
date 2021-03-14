@@ -14,7 +14,7 @@
 
 class IRGeneratorPass: public Parser::Pass{
 public:
-    IRGeneratorPass(std::unordered_map<std::string, std::shared_ptr<IR::BlockEntry>>& blockMap);
+    IRGeneratorPass(std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap);
 
     /* Before */
     void beforeParse(Parser::StatSequence&);
@@ -36,10 +36,11 @@ public:
     void afterParse(Parser::Computation&);
     void afterParse(Parser::FuncDecl&);
     void afterParse(Parser::FormalParam&);
+    void afterParse(Parser::FuncCall&);
 
 private:
-    std::unordered_map<std::string, std::shared_ptr<IR::BlockEntry>>& blockMap;
-    std::shared_ptr<IR::BlockEntry> curEntry;
+    std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap;
+    std::shared_ptr<IR::FuncEntry> curEntry;
     std::stack<std::unordered_map<std::string, IR::index_t>> varStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> bbStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> whileStack;

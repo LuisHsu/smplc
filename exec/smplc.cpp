@@ -53,13 +53,13 @@ int main(int argc, char const *argv[]){
         // Create passes
         std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
         std::vector<std::reference_wrapper<IR::Pass>> irPasses;
-        std::unordered_map<std::string, std::shared_ptr<IR::BlockEntry>> blockMap;
+        std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>> funcMap;
 
         PrintPass printPass;
         if(arguments.parserDebug){
             parserPasses.emplace_back(printPass);
         }
-        IRGeneratorPass irGeneratorPass(blockMap);
+        IRGeneratorPass irGeneratorPass(funcMap);
         RemapPass remapPass;
         std::optional<IRVisualizerPass> irVisualizerPass;
         CSEPass csePass;
@@ -83,7 +83,7 @@ int main(int argc, char const *argv[]){
 
         // Run IR passes
         for(std::reference_wrapper<IR::Pass> pass : irPasses){
-            pass.get().traverse(blockMap);
+            pass.get().traverse(funcMap);
             if(Logger::errorCount() > 0){
                 printLogs(arguments.inputFiles[0]);
                 return -2;

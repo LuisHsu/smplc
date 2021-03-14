@@ -9,8 +9,8 @@
 #include <set>
 #include <memory>
 
-IR::InstrBase::InstrBase(){
-    static IR::index_t newId = 1;
+IR::InstrBase::InstrBase(): isImportant(false){
+    static IR::index_t newId = 3;
     index = newId++;
 }
 
@@ -22,8 +22,8 @@ const IR::index_t IR::getInstrIndex(const IR::Instrction& instr){
 
 void IR::Pass::beforeAll(){}
 void IR::Pass::afterAll(){}
-void IR::Pass::beforeVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){}
-void IR::Pass::afterVisit(const std::string&, std::shared_ptr<IR::BlockEntry>&){}
+void IR::Pass::beforeVisit(const std::string&, std::shared_ptr<IR::FuncEntry>&){}
+void IR::Pass::afterVisit(const std::string&, std::shared_ptr<IR::FuncEntry>&){}
 void IR::Pass::beforeVisit(std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::afterVisit(std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Nop&, std::shared_ptr<IR::BasicBlock>&){}
@@ -31,6 +31,7 @@ void IR::Pass::visit(IR::Const&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Neg&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Add&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Sub&, std::shared_ptr<IR::BasicBlock>&){}
+void IR::Pass::visit(IR::StoreReg&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Mul&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Div&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Cmp&, std::shared_ptr<IR::BasicBlock>&){}
@@ -50,9 +51,9 @@ void IR::Pass::visit(IR::Read&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::Write&, std::shared_ptr<IR::BasicBlock>&){}
 void IR::Pass::visit(IR::WriteNL&, std::shared_ptr<IR::BasicBlock>&){}
 
-void IR::Pass::traverse(std::unordered_map<std::string, std::shared_ptr<IR::BlockEntry>>& blockMap){
+void IR::Pass::traverse(std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap){
     beforeAll();
-    for(std::pair<const std::string, std::shared_ptr<IR::BlockEntry>>& blockPair : blockMap){
+    for(std::pair<const std::string, std::shared_ptr<IR::FuncEntry>>& blockPair : funcMap){
         beforeVisit(blockPair.first, blockPair.second);
         if(blockPair.second->root){
             std::stack<std::shared_ptr<IR::BasicBlock>> blockStack;
