@@ -433,6 +433,10 @@ void IRGeneratorPass::beforeParse(Parser::FuncDecl& target){
 
 void IRGeneratorPass::afterParse(Parser::FuncDecl& target){
     if(target.isSuccess){
+        if(target.identifier.value == "InputNum" || target.identifier.value == "OutputNum" || target.identifier.value == "OutputNewLine"){
+            Logger::put(LogLevel::Error, target.identifier.value + " is reserved function");
+            return;
+        }
         funcMap.emplace(target.identifier.value, curEntry);
         std::unordered_map<std::string, IR::index_t>& usedVariables = bbStack.top()->variableVal;
         for(auto&& varPair : curEntry->variables){
@@ -465,45 +469,52 @@ void IRGeneratorPass::afterParse(Parser::FormalParam& target){
 void IRGeneratorPass::afterParse(Parser::FuncCall& target){
     if(target.isSuccess){
         std::string& funcName = target.identifier.value;
-        if(!funcMap.contains(funcName)){
+        if(funcName == "InputNum"){
+            exprStack.push(emitInstr<IR::Read>().index);
+        }else if(funcName == "OutputNum"){
+            emitInstr<IR::Write>(exprStack.top());
+            exprStack.pop();
+        }else if(funcName == "OutputNewLine"){
+            emitInstr<IR::WriteNL>();
+        }else if(!funcMap.contains(funcName)){
             Logger::put(LogLevel::Error, std::string("calling undefined function '") + funcName + "'");
-            return;
-        }
-        std::shared_ptr<IR::FuncEntry>& entry = funcMap.at(funcName);
-        if(target.expressions.size() != entry->paramAddrMap.size()){
-            Logger::put(LogLevel::Error, std::string("missing parameters while calling function '") + funcName + "'");
-            return;
-        }
-        // Create call link
-        IR::FuncCallLink& link = curEntry->callLinks.emplace_back();
-        link.funcName = target.identifier.value;
-        link.block = bbStack.top();
-        // Get destination
-        IR::Add& dest = emitInstr<IR::Add>(IR::Register::fp, emitInstr<IR::Const>((int32_t)stackTop).index);
-        dest.isImportant = true;
-        // Store fp & return address
-        emitInstr<IR::Store>(emitInstr<IR::Add>(IR::Register::pc, emitInstr<IR::Const>((int32_t)INT_SIZE).index).index, dest.index);
-        emitInstr<IR::Store>(IR::Register::fp,
-            emitInstr<IR::Add>(dest.index,
-                emitInstr<IR::Mul>(emitInstr<IR::Const>((int32_t)INT_SIZE).index, emitInstr<IR::Const>((int32_t)2).index).index
-            ).index
-        );
-        // Store parameters
-        for(size_t i = 0; i < entry->paramAddrMap.size(); ++i){
-            if(exprStack.empty()){
-                Logger::put(LogLevel::Error, std::string("missing expression of parameters for calling function '") + funcName + "'");
+        }else{
+            std::shared_ptr<IR::FuncEntry>& entry = funcMap.at(funcName);
+            if(target.expressions.size() != entry->paramAddrMap.size()){
+                Logger::put(LogLevel::Error, std::string("missing parameters while calling function '") + funcName + "'");
                 return;
             }
-            IR::Add& address = emitInstr<IR::Add>(dest.index,
-                emitInstr<IR::Const>(entry->paramAddrMap.at(entry->paramNames[i])).index
+            // Create call link
+            IR::FuncCallLink& link = curEntry->callLinks.emplace_back();
+            link.funcName = target.identifier.value;
+            link.block = bbStack.top();
+            // Get destination
+            IR::Add& dest = emitInstr<IR::Add>(IR::Register::fp, emitInstr<IR::Const>((int32_t)stackTop).index);
+            dest.isImportant = true;
+            // Store fp & return address
+            emitInstr<IR::Store>(emitInstr<IR::Add>(IR::Register::pc, emitInstr<IR::Const>((int32_t)INT_SIZE).index).index, dest.index);
+            emitInstr<IR::Store>(IR::Register::fp,
+                emitInstr<IR::Add>(dest.index,
+                    emitInstr<IR::Mul>(emitInstr<IR::Const>((int32_t)INT_SIZE).index, emitInstr<IR::Const>((int32_t)2).index).index
+                ).index
             );
-            emitInstr<IR::Store>(exprStack.top(), address.index);
-            link.params.emplace_back(entry->paramNames[i], exprStack.top());
-            exprStack.pop();
+            // Store parameters
+            for(size_t i = 0; i < entry->paramAddrMap.size(); ++i){
+                if(exprStack.empty()){
+                    Logger::put(LogLevel::Error, std::string("missing expression of parameters for calling function '") + funcName + "'");
+                    return;
+                }
+                IR::Add& address = emitInstr<IR::Add>(dest.index,
+                    emitInstr<IR::Const>(entry->paramAddrMap.at(entry->paramNames[i])).index
+                );
+                emitInstr<IR::Store>(exprStack.top(), address.index);
+                link.params.emplace_back(entry->paramNames[i], exprStack.top());
+                exprStack.pop();
+            }
+            // Move frame pointer
+            emitInstr<IR::StoreReg>(IR::Register::fp, dest.index);
+            // Branch to function
+            link.callIndex = emitInstr<IR::Bra>(IR::getInstrIndex(entry->root->instructions.front())).index;
         }
-        // Move frame pointer
-        emitInstr<IR::StoreReg>(IR::Register::fp, dest.index);
-        // Branch to function
-        link.callIndex = emitInstr<IR::Bra>(IR::getInstrIndex(entry->root->instructions.front())).index;
     }
 }

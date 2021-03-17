@@ -11,4 +11,6 @@ array [2] arr1;
 {
     let val1 <- 5;
     call func1(12);
+    call OutputNum(call InputNum());
+    call OutputNewLine;
 }.
