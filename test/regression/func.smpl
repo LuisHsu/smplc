@@ -7,6 +7,7 @@ array [2] arr1;
     let arr1[1] <- 5;
     let val2 <- param1 + 3;
     let val1 <- arr1[1] - 4;
+    return 7;
 };
 {
     let val1 <- 5;

@@ -494,9 +494,7 @@ void IRGeneratorPass::afterParse(Parser::FuncCall& target){
             // Store fp & return address
             emitInstr<IR::Store>(emitInstr<IR::Add>(IR::Register::pc, emitInstr<IR::Const>((int32_t)INT_SIZE).index).index, dest.index);
             emitInstr<IR::Store>(IR::Register::fp,
-                emitInstr<IR::Add>(dest.index,
-                    emitInstr<IR::Mul>(emitInstr<IR::Const>((int32_t)INT_SIZE).index, emitInstr<IR::Const>((int32_t)2).index).index
-                ).index
+                emitInstr<IR::Add>(dest.index, emitInstr<IR::Const>((int32_t)INT_SIZE).index).index
             );
             // Store parameters
             for(size_t i = 0; i < entry->paramAddrMap.size(); ++i){
@@ -516,5 +514,24 @@ void IRGeneratorPass::afterParse(Parser::FuncCall& target){
             // Branch to function
             link.callIndex = emitInstr<IR::Bra>(IR::getInstrIndex(entry->root->instructions.front())).index;
         }
+    }
+}
+
+void IRGeneratorPass::afterParse(Parser::ReturnStatement& target){
+    if(target.isSuccess){
+        // Store return value
+        if(target.expression.isSuccess){
+            emitInstr<IR::StoreReg>(IR::Register::rval, exprStack.top());
+            exprStack.pop();
+        }
+        // Load fp & return address
+        IR::index_t returnAddr = emitInstr<IR::Load>(IR::Register::fp).index;
+        IR::index_t framePtr = emitInstr<IR::Load>(emitInstr<IR::Add>(IR::Register::fp, emitInstr<IR::Const>((int32_t)INT_SIZE).index).index).index;
+        // Move frame pointer
+        emitInstr<IR::StoreReg>(IR::Register::fp, framePtr);
+        // Move program counter
+        emitInstr<IR::StoreReg>(IR::Register::pc, returnAddr);
+        // Branch back
+        emitInstr<IR::Bra>(IR::Register::pc);
     }
 }

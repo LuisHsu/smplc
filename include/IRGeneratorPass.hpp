@@ -37,6 +37,7 @@ public:
     void afterParse(Parser::FuncDecl&);
     void afterParse(Parser::FormalParam&);
     void afterParse(Parser::FuncCall&);
+    void afterParse(Parser::ReturnStatement&);
 
 private:
     std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap;
