@@ -201,27 +201,27 @@ void IRVisualizerPass::visit(IR::End& target, std::shared_ptr<IR::BasicBlock>& b
 }
 void IRVisualizerPass::visit(IR::Bra& target, std::shared_ptr<IR::BasicBlock>& block){
     std::stringstream message;
-    message << "bra :" << target.operand;
+    message << "bra :" << formatOperand(target.operand);
     outputInstr(message.str(), fileOut, target.index, block);
 }
 void IRVisualizerPass::visit(IR::Bne& target, std::shared_ptr<IR::BasicBlock>& block){
     std::stringstream message;
-    message << "bne " << formatOperand(target.operand1) << " :" << target.operand2;
+    message << "bne " << formatOperand(target.operand1) << " :" << formatOperand(target.operand2);
     outputInstr(message.str(), fileOut, target.index, block);
 }
 void IRVisualizerPass::visit(IR::Beq& target, std::shared_ptr<IR::BasicBlock>& block){
     std::stringstream message;
-    message << "beq " << formatOperand(target.operand1) << " :" << target.operand2;
+    message << "beq " << formatOperand(target.operand1) << " :" << formatOperand(target.operand2);
     outputInstr(message.str(), fileOut, target.index, block);
 }
 void IRVisualizerPass::visit(IR::Ble& target, std::shared_ptr<IR::BasicBlock>& block){
     std::stringstream message;
-    message << "ble " << formatOperand(target.operand1) << " :" << target.operand2;
+    message << "ble " << formatOperand(target.operand1) << " :" << formatOperand(target.operand2);
     outputInstr(message.str(), fileOut, target.index, block);
 }
 void IRVisualizerPass::visit(IR::Blt& target, std::shared_ptr<IR::BasicBlock>& block){
     std::stringstream message;
-    message << "blt " << formatOperand(target.operand1) << " :" << target.operand2;
+    message << "blt " << formatOperand(target.operand1) << " :" << formatOperand(target.operand2);
     outputInstr(message.str(), fileOut, target.index, block);
 }
 void IRVisualizerPass::visit(IR::Bge& target, std::shared_ptr<IR::BasicBlock>& block){
@@ -231,7 +231,7 @@ void IRVisualizerPass::visit(IR::Bge& target, std::shared_ptr<IR::BasicBlock>& b
 }
 void IRVisualizerPass::visit(IR::Bgt& target, std::shared_ptr<IR::BasicBlock>& block){
     std::stringstream message;
-    message << "bgt " << formatOperand(target.operand1) << " :" << target.operand2;
+    message << "bgt " << formatOperand(target.operand1) << " :" << formatOperand(target.operand2);
     outputInstr(message.str(), fileOut, target.index, block);
 }
 void IRVisualizerPass::visit(IR::Read& target, std::shared_ptr<IR::BasicBlock>& block){

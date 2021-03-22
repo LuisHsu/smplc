@@ -8,6 +8,7 @@
 #include <stack>
 #include <memory>
 #include <functional>
+#include <set>
 
 #include <IR.hpp>
 #include <Parser.hpp>
@@ -21,6 +22,7 @@ public:
     void beforeParse(Parser::Computation&);
     void beforeParse(Parser::WhileStatement&);
     void beforeParse(Parser::FuncDecl&);
+    void beforeParse(Parser::FuncBody&);
 
     /* After */
     void afterParse(Parser::VarDecl&);
@@ -38,14 +40,17 @@ public:
     void afterParse(Parser::FormalParam&);
     void afterParse(Parser::FuncCall&);
     void afterParse(Parser::ReturnStatement&);
+    void afterParse(Parser::FuncBody&);
 
 private:
     std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap;
     std::shared_ptr<IR::FuncEntry> curEntry;
+    Parser::FuncDecl* curDecl;
     std::stack<std::unordered_map<std::string, IR::index_t>> varStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> bbStack;
     std::stack<std::shared_ptr<IR::BasicBlock>> whileStack;
     std::stack<IR::index_t> exprStack;
+    std::set<std::string> usedVar;
     IR::address_t stackTop;
     template<typename T, typename... O> T& emitInstr(O...);
     std::string getFuncMsg();

@@ -103,6 +103,19 @@ void RemapPass::visit(IR::Phi& instr, std::shared_ptr<IR::BasicBlock>&){
     }
 }
 
+void RemapPass::visit(IR::Bra&, std::shared_ptr<IR::BasicBlock>&){
+    // Update call link
+    if(!mapStack.empty()){
+        for(IR::FuncCallLink& link : curEntry->callLinks){
+            for(auto& param : link.params){
+                if(mapStack.top().second.contains(param.second)){
+                    param.second = mapStack.top().second[param.second];
+                }
+            }
+        }
+    }
+}
+
 void RemapPass::visit(IR::Bne& instr, std::shared_ptr<IR::BasicBlock>&){
     branchRemap(instr, mapStack);
 }
@@ -131,3 +144,6 @@ void RemapPass::visit(IR::Write& instr, std::shared_ptr<IR::BasicBlock>&){
     unaryRemap(instr, mapStack);
 }
 
+void RemapPass::beforeVisit(const std::string&, std::shared_ptr<IR::FuncEntry>& entry){
+    curEntry = entry;
+}

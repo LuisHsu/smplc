@@ -333,9 +333,7 @@ bool Parser::FuncCall::parse(){
     isSuccess = false;
     expressions.clear();
     if(
-        errorOnPartial(matchSequence<'c', 'a', 'l', 'l'>(source), 4,
-            "expected 'call' in function call"
-        )
+        (matchSequence<'c', 'a', 'l', 'l'>(source) == 4)
         && errorOnFalse(
             skipWhiteSpaces(source) && identifier.parse(),
             "expected function name in function call"

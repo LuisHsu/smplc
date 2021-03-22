@@ -15,7 +15,9 @@
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-IRGeneratorPass::IRGeneratorPass(std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap): funcMap(funcMap){}
+IRGeneratorPass::IRGeneratorPass(std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>>& funcMap)
+    : funcMap(funcMap), curDecl(nullptr)
+{}
 
 template<typename T, typename... O> T& IRGeneratorPass::emitInstr(O... op){
     return std::get<T>(bbStack.top()->instructions.emplace_back(T(op...)));
@@ -83,6 +85,7 @@ void IRGeneratorPass::afterParse(Parser::Factor& target){
             },
             [&](Parser::Designator& des){
                 std::string& identName = des.identifier.value;
+                usedVar.insert(identName);
                 std::unordered_map<std::string, IR::TypeData>& varMap = curEntry->variables;
                 if(varMap.contains(identName)){
                     IR::TypeData varType = varMap[identName];
@@ -376,9 +379,8 @@ void IRGeneratorPass::afterParse(Parser::WhileStatement& target){
 void IRGeneratorPass::afterParse(Parser::Computation& target){
     if(target.isSuccess){
         emitInstr<IR::End>();
-        std::unordered_map<std::string, IR::index_t>& usedVariables = bbStack.top()->variableVal;
         for(auto&& varPair : curEntry->variables){
-            if(!usedVariables.contains(varPair.first)){
+            if(!usedVar.contains(varPair.first)){
                 Logger::put(LogLevel::Warning, std::string("unused variable '") + varPair.first + "'");
             }
         }
@@ -429,23 +431,18 @@ void IRGeneratorPass::afterParse(Parser::Designator& target){
 void IRGeneratorPass::beforeParse(Parser::FuncDecl& target){
     stackTop = INT_SIZE * 2;
     curEntry = std::make_shared<IR::FuncEntry>();
+    curDecl = &target;
 }
 
 void IRGeneratorPass::afterParse(Parser::FuncDecl& target){
     if(target.isSuccess){
-        if(target.identifier.value == "InputNum" || target.identifier.value == "OutputNum" || target.identifier.value == "OutputNewLine"){
-            Logger::put(LogLevel::Error, target.identifier.value + " is reserved function");
-            return;
-        }
-        funcMap.emplace(target.identifier.value, curEntry);
-        std::unordered_map<std::string, IR::index_t>& usedVariables = bbStack.top()->variableVal;
         for(auto&& varPair : curEntry->variables){
-            if(!usedVariables.contains(varPair.first)){
+            if(!usedVar.contains(varPair.first)){
                 Logger::put(LogLevel::Warning, std::string("unused variable '") + varPair.first + "'");
             }
         }
         for(auto&& varPair : curEntry->paramAddrMap){
-            if(!usedVariables.contains(varPair.first)){
+            if(!usedVar.contains(varPair.first)){
                 Logger::put(LogLevel::Warning, std::string("unused parameter '") + varPair.first + "'");
             }
         }
@@ -454,6 +451,24 @@ void IRGeneratorPass::afterParse(Parser::FuncDecl& target){
         }
     }
     curEntry = funcMap["_main"];
+    curDecl = nullptr;
+    usedVar.clear();
+}
+
+void IRGeneratorPass::beforeParse(Parser::FuncBody&){
+    if(curDecl != nullptr){
+        if(curDecl->identifier.value == "InputNum" || curDecl->identifier.value == "OutputNum" || curDecl->identifier.value == "OutputNewLine"){
+            Logger::put(LogLevel::Error, curDecl->identifier.value + " is reserved function");
+            return;
+        }
+        funcMap.emplace(curDecl->identifier.value, curEntry);
+    }
+}
+
+void IRGeneratorPass::afterParse(Parser::FuncBody& target){
+    if(!target.isSuccess){
+        funcMap.erase(curDecl->identifier.value);
+    }
 }
 
 void IRGeneratorPass::afterParse(Parser::FormalParam& target){
@@ -513,6 +528,10 @@ void IRGeneratorPass::afterParse(Parser::FuncCall& target){
             emitInstr<IR::StoreReg>(IR::Register::fp, dest.index);
             // Branch to function
             link.callIndex = emitInstr<IR::Bra>(IR::getInstrIndex(entry->root->instructions.front())).index;
+            // Get return value after calling function
+            if(!entry->isVoid){
+                exprStack.push(IR::Register::rval);
+            }
         }
     }
 }

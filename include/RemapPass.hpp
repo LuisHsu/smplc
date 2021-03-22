@@ -11,8 +11,10 @@
 class RemapPass: public IR::Pass{
 private:
     std::stack<std::pair<std::shared_ptr<IR::BasicBlock>, std::unordered_map<IR::index_t, IR::index_t>>> mapStack;
+    std::shared_ptr<IR::FuncEntry> curEntry;
 
     void beforeVisit(std::shared_ptr<IR::BasicBlock>&);
+    void beforeVisit(const std::string&, std::shared_ptr<IR::FuncEntry>&);
 
     void visit(IR::Neg&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Add&, std::shared_ptr<IR::BasicBlock>&);
@@ -24,6 +26,7 @@ private:
     void visit(IR::Load&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Store&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Phi&, std::shared_ptr<IR::BasicBlock>&);
+    void visit(IR::Bra&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Bne&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Beq&, std::shared_ptr<IR::BasicBlock>&);
     void visit(IR::Ble&, std::shared_ptr<IR::BasicBlock>&);
