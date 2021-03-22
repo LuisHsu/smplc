@@ -18,8 +18,20 @@ make
 # Run
 
 ```shell
-smplc <input_file>
+smplc [Options] <input_file>
 ```
+
+**It still under development and not really generate assembly now. Use the instruction below to generate visualized IR in Graphviz format**
+
+```shell
+smplc --visualize_ir <output_file> <input_file>
+```
+
+### Options
+
+* `--parser_debug` : Generate verbose parser messages for debug parser
+* `--parse_only` : Parse only without generate IR
+* `--no_cse` : Not perform Common Subexpression Elimination
 
 # Test
 
