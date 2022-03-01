@@ -1,12 +1,11 @@
 /**
- * Copyright 2021 Luis Hsu. All rights reserved.
+ * Copyright 2022 Luis Hsu. All rights reserved.
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  */
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <optional>
 #include <functional>
 
 #include <Source.hpp>
@@ -14,10 +13,6 @@
 #include <Parser.hpp>
 #include <Logger.hpp>
 #include <PrintPass.hpp>
-#include <IRGeneratorPass.hpp>
-#include <IRVisualizerPass.hpp>
-#include <RemapPass.hpp>
-#include <CSEPass.hpp>
 
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
@@ -52,42 +47,16 @@ int main(int argc, char const *argv[]){
 
         // Create passes
         std::vector<std::reference_wrapper<Parser::Pass>> parserPasses;
-        std::vector<std::reference_wrapper<IR::Pass>> irPasses;
-        std::unordered_map<std::string, std::shared_ptr<IR::FuncEntry>> funcMap;
 
         PrintPass printPass;
         if(arguments.parserDebug){
             parserPasses.emplace_back(printPass);
-        }
-        IRGeneratorPass irGeneratorPass(funcMap);
-        RemapPass remapPass;
-        std::optional<IRVisualizerPass> irVisualizerPass;
-        CSEPass csePass;
-
-        if(!arguments.parseOnly){
-            parserPasses.emplace_back(irGeneratorPass);
-            irPasses.emplace_back(remapPass);
-            if(arguments.withCSE){
-                irPasses.emplace_back(csePass);
-            }
-            if(!arguments.irVisualizeFile.empty()){
-                irPasses.emplace_back(irVisualizerPass.emplace(arguments.irVisualizeFile));
-            }
         }
 
         // Parse
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs(arguments.inputFiles[0]);
             return -1;
-        }
-
-        // Run IR passes
-        for(std::reference_wrapper<IR::Pass> pass : irPasses){
-            pass.get().traverse(funcMap);
-            if(Logger::errorCount() > 0){
-                printLogs(arguments.inputFiles[0]);
-                return -2;
-            }
         }
         printLogs(arguments.inputFiles[0]);
     }catch(Exception& err){

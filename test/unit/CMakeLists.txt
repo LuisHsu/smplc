@@ -16,7 +16,7 @@ function(add_unittest test_name)
         googletest
     )
     target_link_libraries(${ARGV0}
-        smplc
+        smplc-wasm
         gtest
         gtest_main
         pthread

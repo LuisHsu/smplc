@@ -4,5 +4,5 @@ add_executable(smplc-exec
 )
 set_target_properties(smplc-exec PROPERTIES OUTPUT_NAME "smplc")
 target_link_libraries(smplc-exec
-    smplc
+    smplc-wasm
 )

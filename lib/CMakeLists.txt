@@ -1,12 +1,7 @@
-add_library(smplc
+add_library(smplc-wasm
     Source.cpp
     Exception.cpp
     Parser.cpp
     Logger.cpp
     PrintPass.cpp
-    IR.cpp
-    IRGeneratorPass.cpp
-    IRVisualizerPass.cpp
-    RemapPass.cpp
-    CSEPass.cpp
 )

@@ -9,21 +9,13 @@
 #include <Exception.hpp>
 
 ArgParse::ArgParse(int argc, char const *argv[]):
-    parserDebug(false), parseOnly(false), withCSE(true)
+    parserDebug(false), parseOnly(false)
 {
     for(int i = 1; i < argc; ++i){
         if(std::string(argv[i]) == "--parser_debug"){
             parserDebug = true;
         }else if(std::string(argv[i]) == "--parse_only"){
             parseOnly = true;
-        }else if(std::string(argv[i]) == "--no_cse"){
-            withCSE = false;
-        }else if(std::string(argv[i]) == "--visualize_ir"){
-            if(++i < argc){
-                irVisualizeFile = argv[i];
-            }else{
-                throw Exception("no output file for visualize IR");
-            }
         }else{
             inputFiles.emplace_back(argv[i]);
         }

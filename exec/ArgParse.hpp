@@ -12,8 +12,6 @@ public:
     std::vector<std::string> inputFiles;
     bool parserDebug;
     bool parseOnly;
-    bool withCSE;
-    std::string irVisualizeFile;
 };
 
 #endif
