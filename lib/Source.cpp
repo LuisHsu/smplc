@@ -10,31 +10,47 @@
 #include <Exception.hpp>
 #include <Logger.hpp>
 
+#include <iostream>
+
 Source::Source(std::istream& stream):
     stream(stream)
 {
 }
 
-static int skipComment(std::istream& stream){
-    if(!stream.eof()){
-        int cur = stream.get();
+static int isEof(std::istream& stream, std::stack<int>& back){
+    return stream.eof() && back.empty();
+}
+
+static int getCh(std::istream& stream, std::stack<int>& back){
+    if(!back.empty()){
+        int ch = back.top();
+        back.pop();
+        return ch;
+    }else{
+        return stream.get();
+    }
+}
+
+static int skipComment(std::istream& stream, std::stack<int>& back){
+    if(!isEof(stream, back)){
+        int cur = getCh(stream, back);
         if(cur == '\v' || cur == '\r' || cur == '\t' || cur == '\n'){
             if(cur == '\n'){
                 Logger::increaseLine();
             }
             cur = ' ';
-        }else if(cur == '/' && !stream.eof()){
-            int next = stream.get();
+        }else if(cur == '/' && !isEof(stream, back)){
+            int next = getCh(stream, back);
             if(next == '/'){
                 // Single line
-                while(!stream.eof() && stream.get() != '\n');
+                while(!isEof(stream, back) && getCh(stream, back) != '\n');
                 cur = ' ';
             }else if(next == '*'){
                 // Multi line
                 int level = 1;
                 int prev = 0;
-                while(!stream.eof()){
-                    next = stream.get();
+                while(!isEof(stream, back)){
+                    next = getCh(stream, back);
                     if(prev == '/' && next == '*'){
                         level += 1;
                     }else if(prev == '*' && next == '/'){
@@ -45,7 +61,7 @@ static int skipComment(std::istream& stream){
                     }
                     prev = next;
                 }
-                if(stream.eof()){
+                if(isEof(stream, back)){
                     if(level != 0){
                         throw Exception("Unclosed multi-line comment");
                     }else{
@@ -54,7 +70,7 @@ static int skipComment(std::istream& stream){
                 }
                 cur = ' ';
             }else{
-                stream.putback(next);
+                back.push(next);
             }
         }
         return cur;
@@ -65,10 +81,10 @@ static int skipComment(std::istream& stream){
 
 int Source::get(){
     if(!stream.eof()){
-        int current = skipComment(stream);
+        int current = skipComment(stream, back);
         if(current == ' '){
-            while((current = skipComment(stream)) == ' ');
-            stream.putback(current);
+            while((current = skipComment(stream, back)) == ' ');
+            putback(current);
             current = ' ';
         }
         return current;
@@ -78,7 +94,6 @@ int Source::get(){
 
 void Source::putback(int ch){
     if(ch != -1){
-        stream.clear();
-        stream.putback(ch);
+        back.push(ch);
     }
 }
