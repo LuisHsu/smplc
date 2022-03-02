@@ -12,10 +12,16 @@ ArgParse::ArgParse(int argc, char const *argv[]):
     parserDebug(false), parseOnly(false)
 {
     for(int i = 1; i < argc; ++i){
-        if(std::string(argv[i]) == "--parser_debug"){
+        std::string arg(argv[i]);
+        if(arg == "--parser_debug"){
             parserDebug = true;
-        }else if(std::string(argv[i]) == "--parse_only"){
+        }else if(arg == "--parse_only"){
             parseOnly = true;
+        }else if(arg == "-o" || arg == "--output"){
+            if((i + 1) >= argc){
+                throw Exception("no output file prefix after '-o' or '--output' option");
+            }
+            outputFile = argv[++i];
         }else{
             inputFiles.emplace_back(argv[i]);
         }
@@ -25,5 +31,9 @@ ArgParse::ArgParse(int argc, char const *argv[]):
         throw Exception("no input file");
     }else if(inputFiles.size() > 1){
         throw Exception("only support one input file now");
+    }
+    // Output file
+    if(outputFile.empty()){
+        outputFile = "a";
     }
 }
