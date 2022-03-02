@@ -80,7 +80,7 @@ static int skipComment(std::istream& stream, std::stack<int>& back){
 };
 
 int Source::get(){
-    if(!stream.eof()){
+    if(!(stream.eof() && back.empty())){
         int current = skipComment(stream, back);
         if(current == ' '){
             while((current = skipComment(stream, back)) == ' ');
