@@ -37,7 +37,7 @@ using Limit = std::pair<uint32_t, uint32_t>;
 
 template<uint16_t OP>
 struct InstrBase{
-    static uint16_t opcode = OP;
+    static const uint16_t opcode = OP;
 };
 
 template<uint16_t OP>
@@ -548,7 +548,7 @@ struct Data {
         ConstExpr offset;
     };
     std::variant<Passive, Active, Declarative> mode;
-} WasmData;
+};
 
 struct Module{
     std::vector<FuncType>   types;
