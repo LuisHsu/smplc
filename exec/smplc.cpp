@@ -13,7 +13,8 @@
 #include <Parser.hpp>
 #include <Logger.hpp>
 #include <PrintPass.hpp>
-#include <GenWasmPass.hpp>
+#include <EmitWasmPass.hpp>
+#include <GenWasm.hpp>
 
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
@@ -54,9 +55,9 @@ int main(int argc, char const *argv[]){
             parserPasses.emplace_back(printPass);
         }
 
-        GenWasmPass genWasmPass;
+        EmitWasmPass wasmPass;
         if(!arguments.parseOnly){
-            parserPasses.emplace_back(genWasmPass);
+            parserPasses.emplace_back(wasmPass);
         }
 
         // Parse
@@ -66,7 +67,8 @@ int main(int argc, char const *argv[]){
         }
 
         // Output wasm
-        genWasmPass.output(arguments.outputFile);
+        GenWasm::wrapper(arguments.outputFile);
+        GenWasm::binary(arguments.outputFile);
 
         // Print logs
         printLogs(arguments.inputFiles[0]);
