@@ -4,4 +4,5 @@ add_library(smplc-wasm
     Parser.cpp
     Logger.cpp
     PrintPass.cpp
+    GenWasmPass.cpp
 )

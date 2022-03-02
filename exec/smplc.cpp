@@ -13,6 +13,7 @@
 #include <Parser.hpp>
 #include <Logger.hpp>
 #include <PrintPass.hpp>
+#include <GenWasmPass.hpp>
 
 #include "ColorPrint.hpp"
 #include "ArgParse.hpp"
@@ -53,11 +54,21 @@ int main(int argc, char const *argv[]){
             parserPasses.emplace_back(printPass);
         }
 
+        GenWasmPass genWasmPass;
+        if(!arguments.parseOnly){
+            parserPasses.emplace_back(genWasmPass);
+        }
+
         // Parse
         if(!Parser::Computation(sourceFile, parserPasses).parse() || Logger::errorCount() > 0){
             printLogs(arguments.inputFiles[0]);
             return -1;
         }
+
+        // Output wasm
+        genWasmPass.output(arguments.outputFile);
+
+        // Print logs
         printLogs(arguments.inputFiles[0]);
     }catch(Exception& err){
         ColorPrint::fatal(err.what());
