@@ -2,12 +2,19 @@
 #include <Wasm.hpp>
 
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <cstddef>
 
-static std::ostream& operator<<(std::ostream& out, Wasm::FuncType& module);
-static std::ostream& operator<<(std::ostream& out, Wasm::Module& module);
+class Section;
+static std::ostream& writeInt(std::ostream&, uint32_t);
+static std::ostream& writeInt(std::ostream&, uint64_t);
+static std::ostream& writeInt(std::ostream&, int32_t);
+static std::ostream& writeInt(std::ostream&, int64_t);
+static std::ostream& operator<<(std::ostream&, std::byte);
+static std::ostream& operator<<(std::ostream&, Wasm::Module&);
+static std::ostream& operator<<(std::ostream&, Wasm::FuncType&);
+static std::ostream& operator<<(std::ostream&, Wasm::ValueType&);
+static std::ostream& operator<<(std::ostream&, Section&);
 
 void GenWasm::wrapper(std::string filePrefix){
     // Write js wrapper
@@ -42,37 +49,79 @@ void GenWasm::binary(std::string filePrefix, Wasm::Module& module){
     fout.close();
 }
 
-static std::vector<std::byte> leb128(uint32_t value){
-    std::vector<std::byte> result;
+class Section: public std::streambuf{
+public:
+    std::vector<std::byte> bytes;
+protected:
+    int overflow(int c){
+        return (int)bytes.emplace_back((std::byte)c);
+    }
+friend std::ostream& operator<<(std::ostream&, Section&);
+};
+
+static std::ostream& operator<<(std::ostream& out, Section& section){
+    return out.write((char*)section.bytes.data(), section.bytes.size());
+}
+
+static std::ostream& writeInt(std::ostream& out, uint32_t value){
+    std::vector<std::byte> bytes;
     for(int i = 0; i < 5; ++i){
         std::byte byte {(uint8_t)(value & 0x7f)};
         if((value >>= 7) != 0){
             byte |= std::byte{0x80};
-            result.emplace_back(byte | (std::byte)0x80);
+            bytes.emplace_back(byte | (std::byte)0x80);
         }else{
-            result.emplace_back(byte);
+            bytes.emplace_back(byte);
             break;
         }
     }
-    return result;
+    return out.write((char*)bytes.data(), bytes.size());
 }
 
-static std::vector<std::byte> leb128(int32_t value){
-    return leb128((uint32_t)value);
+static std::ostream& writeInt(std::ostream& out, uint64_t value){
+    std::vector<std::byte> bytes;
+    for(int i = 0; i < 10; ++i){
+        std::byte byte {(uint8_t)(value & 0x7f)};
+        if((value >>= 7) != 0){
+            byte |= std::byte{0x80};
+            bytes.emplace_back(byte | (std::byte)0x80);
+        }else{
+            bytes.emplace_back(byte);
+            break;
+        }
+    }
+    return out.write((char*)bytes.data(), bytes.size());
+}
+
+static std::ostream& writeInt(std::ostream& out, int32_t value){
+    return writeInt(out, (uint32_t)value);
+}
+
+static std::ostream& writeInt(std::ostream& out, int64_t value){
+    return writeInt(out, (uint64_t)value);
+}
+
+static std::ostream& operator<<(std::ostream& out, std::byte value){
+    return out.write((char*)&value, 1);
 }
 
 template<uint8_t N, class T, class A>
-static void writeSection(std::ostream& out, std::vector<T, A>& instances){
-    static const std::byte sectNum {N};
-    std::stringstream stream(std::ios::binary);
+static std::ostream& writeSection(std::ostream& out, std::vector<T, A>& instances){
+    Section section;
+    std::ostream stream(&section);
     for(T& instance: instances){
         stream << instance;
     }
-    std::string section(stream.str());
-    out.write((char*)&sectNum, 1);
-    std::vector<std::byte> sectSize = leb128((uint32_t)section.size());
-    out.write((char*)sectSize.data(), sectSize.size());
-    out.write(section.data(), section.size());
+    return out << std::byte(N) << section;
+}
+
+template<class T, class A>
+static std::ostream& operator<<(std::ostream& out, std::vector<T, A>& instances){
+    writeInt(out, (uint32_t)instances.size());
+    for(T& instance: instances){
+        out << instance;
+    }
+    return out;
 }
 
 static std::ostream& operator<<(std::ostream& out, Wasm::Module& module){
@@ -84,7 +133,19 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Module& module){
     return out;
 }
 
-static std::ostream& operator<<(std::ostream& out, Wasm::FuncType& module){
-    // return
-    return out;
+static std::ostream& operator<<(std::ostream& out, Wasm::ValueType& type){
+    switch(type){
+        case Wasm::ValueType::i32:
+            return out << std::byte(0x7f);
+        case Wasm::ValueType::i64:
+            return out << std::byte(0x7e);
+        case Wasm::ValueType::f32:
+            return out << std::byte(0x7d);
+        case Wasm::ValueType::f64:
+            return out << std::byte(0x7c);
+    }
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::FuncType& funcType){
+    return out << std::byte(0x60) << funcType.params << funcType.results;
 }
