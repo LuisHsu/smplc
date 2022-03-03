@@ -7,7 +7,7 @@
 
 namespace GenWasm{
     void wrapper(std::string filePrefix);
-    void binary(std::string filePrefix);
+    void binary(std::string filePrefix, Wasm::Module& module);
 }
 
 #endif

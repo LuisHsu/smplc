@@ -68,7 +68,7 @@ int main(int argc, char const *argv[]){
 
         // Output wasm
         GenWasm::wrapper(arguments.outputFile);
-        GenWasm::binary(arguments.outputFile);
+        GenWasm::binary(arguments.outputFile, wasmPass.module);
 
         // Print logs
         printLogs(arguments.inputFiles[0]);
