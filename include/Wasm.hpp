@@ -33,7 +33,7 @@ struct Ref {
     std::optional<uint32_t> addr;
 };
 
-using Limit = std::pair<uint32_t, uint32_t>;
+using Limit = std::pair<uint32_t, std::optional<uint32_t>>;
 
 template<uint16_t OP>
 struct InstrBase{
@@ -487,18 +487,26 @@ using Instr = std::variant<
     Instr_table_size
 >;
 
+using Memory = Limit;
+
+struct Table {
+    Limit limits;
+    Ref::Type refType;
+};
+
+struct GlobalType{
+    bool mut;
+    ValueType valueType;
+};
+
 struct Import {
     std::string module;
     std::string name;
-    DescType    descType;
-    struct Global{
-        bool mut;
-        ValueType valueType;
-    };
     std::variant<
-        uint32_t, // index of funcType in types
-        Limit, // table, memory
-        Global
+        uint32_t,
+        Table,
+        Memory,
+        GlobalType
     > desc;
 };
 
@@ -508,16 +516,7 @@ struct Func {
     std::list<Instr> body;
 };
 
-struct Table {
-    Limit limits;
-    Ref::Type  refType;
-};
-
-using Memory = Limit;
-
-struct Global {
-    bool       mut;
-    ValueType  valType;
+struct Global: public GlobalType {
     ConstExpr  init;
 };
 
@@ -527,27 +526,22 @@ struct Export {
     uint32_t    descIdx;
 };
 
+struct PassiveMode {};
+struct DeclarativeMode {};
+struct ActiveMode {
+    uint32_t index;
+    ConstExpr offset;
+};
+
 struct Elem {
     Ref::Type type;
     std::vector<ConstExpr> init;
-    struct Passive {};
-    struct Declarative {};
-    struct Active {
-        uint32_t table;
-        ConstExpr offset;
-    };
-    std::variant<Passive, Active, Declarative> mode;
+    std::variant<PassiveMode, ActiveMode, DeclarativeMode> mode;
 };
 
 struct Data {
     std::string init;
-    struct Passive {};
-    struct Declarative {};
-    struct Active {
-        uint32_t memory;
-        ConstExpr offset;
-    };
-    std::variant<Passive, Active, Declarative> mode;
+    std::variant<PassiveMode, ActiveMode, DeclarativeMode> mode;
 };
 
 struct Module{

@@ -4,6 +4,10 @@
 #include <fstream>
 #include <vector>
 #include <cstddef>
+#include <variant>
+
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
 class Section;
 static std::ostream& writeInt(std::ostream&, uint32_t);
@@ -11,10 +15,15 @@ static std::ostream& writeInt(std::ostream&, uint64_t);
 static std::ostream& writeInt(std::ostream&, int32_t);
 static std::ostream& writeInt(std::ostream&, int64_t);
 static std::ostream& operator<<(std::ostream&, std::byte);
+static std::ostream& operator<<(std::ostream&, Section&);
 static std::ostream& operator<<(std::ostream&, Wasm::Module&);
 static std::ostream& operator<<(std::ostream&, Wasm::FuncType&);
 static std::ostream& operator<<(std::ostream&, Wasm::ValueType&);
-static std::ostream& operator<<(std::ostream&, Section&);
+static std::ostream& operator<<(std::ostream&, Wasm::Import&);
+static std::ostream& operator<<(std::ostream&, Wasm::Table&);
+static std::ostream& operator<<(std::ostream&, Wasm::Limit&);
+static std::ostream& operator<<(std::ostream&, Wasm::GlobalType&);
+static std::ostream& operator<<(std::ostream&, Wasm::Ref::Type&);
 
 void GenWasm::wrapper(std::string filePrefix){
     // Write js wrapper
@@ -60,7 +69,7 @@ friend std::ostream& operator<<(std::ostream&, Section&);
 };
 
 static std::ostream& operator<<(std::ostream& out, Section& section){
-    return out.write((char*)section.bytes.data(), section.bytes.size());
+    return writeInt(out, (uint32_t)section.bytes.size()).write((char*)section.bytes.data(), section.bytes.size());
 }
 
 static std::ostream& writeInt(std::ostream& out, uint32_t value){
@@ -109,6 +118,7 @@ template<uint8_t N, class T, class A>
 static std::ostream& writeSection(std::ostream& out, std::vector<T, A>& instances){
     Section section;
     std::ostream stream(&section);
+    writeInt(stream, (uint16_t)instances.size());
     for(T& instance: instances){
         stream << instance;
     }
@@ -127,8 +137,16 @@ static std::ostream& operator<<(std::ostream& out, std::vector<T, A>& instances)
 static std::ostream& operator<<(std::ostream& out, Wasm::Module& module){
     // Magic & version
     out.write("\00asm" "\x01\x00\x00\x00", 8);
-    // Type section
-    writeSection<0x01>(out, module.types);
+    writeSection<0x01>(out, module.types); // Type
+    writeSection<0x02>(out, module.imports); // Import
+    // TODO: Func section
+    // TODO: Table section
+    // TODO: Memory section
+    // TODO: Global section
+    // TODO: Export section
+    // TODO: Start section
+    // TODO: Elem section
+    // TODO: Data section
     // return
     return out;
 }
@@ -148,4 +166,55 @@ static std::ostream& operator<<(std::ostream& out, Wasm::ValueType& type){
 
 static std::ostream& operator<<(std::ostream& out, Wasm::FuncType& funcType){
     return out << std::byte(0x60) << funcType.params << funcType.results;
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::Import& import){
+    writeInt(out, (uint32_t)import.module.size());
+    out.write(import.module.data(), import.module.size());
+    writeInt(out, (uint32_t)import.name.size());
+    out.write(import.name.data(), import.name.size());
+    return std::visit(overload {
+        [&](uint32_t& index) -> std::ostream& {
+            out << std::byte(0x00);
+            return writeInt(out, index);
+        },
+        [&](Wasm::Table& table) -> std::ostream& {
+            return out << std::byte(0x01) << table;
+        },
+        [&](Wasm::Memory& mem) -> std::ostream& {
+            return out << std::byte(0x02) << mem;
+        },
+        [&](Wasm::GlobalType& global) -> std::ostream& {
+            return out << std::byte(0x03) << global;
+        },
+    }, import.desc);
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::Table& table){
+    return out << table.refType << table.limits;
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::Limit& limit){
+    if(limit.second.has_value()){
+        out << std::byte(0x01);
+        writeInt(out, limit.first);
+        writeInt(out, limit.second.value());
+    }else{
+        out << std::byte(0x00);
+        writeInt(out, limit.first);
+    }
+    return out;
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::GlobalType& type){
+    return out << type.valueType << std::byte(type.mut ? 0x01 : 0x00);
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::Ref::Type& type){
+    switch(type){
+        case Wasm::Ref::Type::Func:
+            return out << std::byte(0x70);
+        case Wasm::Ref::Type::Extern:
+            return out << std::byte(0x6f);
+    }
 }
