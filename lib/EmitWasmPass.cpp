@@ -17,7 +17,7 @@ void EmitWasmPass::beforeParse(Parser::Computation&){
     module.imports.emplace_back(Wasm::Import {.module = "stdio", .name = "InputNum", .desc = 0U});
     module.imports.emplace_back(Wasm::Import {.module = "stdio", .name = "OutputNewLine", .desc = 0U});
     /* Memory */
-    module.mems.emplace_back(1U, 0U);
+    module.mems.emplace_back(1U, std::nullopt);
     /* Main function */
     funcStack.emplace();
 }

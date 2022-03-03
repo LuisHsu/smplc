@@ -24,6 +24,7 @@ static std::ostream& operator<<(std::ostream&, Wasm::Table&);
 static std::ostream& operator<<(std::ostream&, Wasm::Limit&);
 static std::ostream& operator<<(std::ostream&, Wasm::GlobalType&);
 static std::ostream& operator<<(std::ostream&, Wasm::Ref::Type&);
+static std::ostream& operator<<(std::ostream&, Wasm::Global&);
 
 void GenWasm::wrapper(std::string filePrefix){
     // Write js wrapper
@@ -134,19 +135,31 @@ static std::ostream& operator<<(std::ostream& out, std::vector<T, A>& instances)
     return out;
 }
 
+static std::ostream& funcSection(std::ostream& out, std::vector<Wasm::Func>& funcs){
+    Section section;
+    std::ostream stream(&section);
+    writeInt(stream, (uint16_t)funcs.size());
+    for(Wasm::Func& func: funcs){
+        writeInt(stream, func.type);
+    }
+    return out << std::byte(0x03) << section;
+}
+
 static std::ostream& operator<<(std::ostream& out, Wasm::Module& module){
     // Magic & version
     out.write("\00asm" "\x01\x00\x00\x00", 8);
     writeSection<0x01>(out, module.types); // Type
     writeSection<0x02>(out, module.imports); // Import
-    // TODO: Func section
-    // TODO: Table section
-    // TODO: Memory section
-    // TODO: Global section
+    // funcSection(out, module.funcs); // Func
+    writeSection<0x04>(out, module.tables); // Table
+    writeSection<0x05>(out, module.mems); // Memory
+    // writeSection<0x06>(out, module.globals); // Global
     // TODO: Export section
     // TODO: Start section
     // TODO: Elem section
+    // TODO: Code section
     // TODO: Data section
+    // TODO: Data count section
     // return
     return out;
 }
@@ -217,4 +230,9 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Ref::Type& type){
         case Wasm::Ref::Type::Extern:
             return out << std::byte(0x6f);
     }
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::Global& global){
+    // TODO:
+    return out;
 }
