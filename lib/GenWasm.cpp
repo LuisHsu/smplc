@@ -269,6 +269,10 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Func& func){
             [&](Wasm::Instr_end& instr){
                 stream << std::byte(0x0B);
             },
+            [&](Wasm::Instr_i32_const& instr){
+                stream << std::byte(0x41);
+                writeInt(stream, instr.value);
+            },
         }, instr);
     }
     return out << code;

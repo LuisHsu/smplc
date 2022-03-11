@@ -290,7 +290,7 @@ using Instr = std::variant<
     // Instr_loop,
     // Instr_if,
     // Instr_else,
-    Instr_end
+    Instr_end,
     // Instr_br,
     // Instr_br_if,
     // Instr_br_table,
@@ -332,7 +332,7 @@ using Instr = std::variant<
     // Instr_i64_store32,
     // Instr_memory_size,
     // Instr_memory_grow,
-    // Instr_i32_const,
+    Instr_i32_const
     // Instr_i64_const,
     // Instr_f32_const,
     // Instr_f64_const,

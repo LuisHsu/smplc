@@ -3,6 +3,9 @@
 #include <fstream>
 #include <Logger.hpp>
 
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
+
 uint32_t EmitWasmPass::FuncEntry::serial = 3;
 
 EmitWasmPass::FuncEntry::FuncEntry():id(serial++){}
@@ -45,4 +48,24 @@ void EmitWasmPass::afterParse(Parser::VarDecl& decl){
 
 void EmitWasmPass::afterParse(Parser::StatSequence&){
     funcStack.top().func.body.emplace_back(Wasm::Instr_end());
+}
+
+void EmitWasmPass::afterParse(Parser::Factor& factor){
+    std::visit(overload {
+        [&](Parser::Designator&){
+            // TODO:
+        },
+        [&](Parser::Number& num){
+            Wasm::Instr_i32_const instr {.value = (int32_t)num.value};
+            funcStack.top().func.body.emplace_back(instr);
+        },
+        [&](Parser::Expression&){
+            // TODO:
+        },
+        [&](Parser::FuncCall&){
+            // TODO:
+        },
+        [&](std::monostate&){
+        }
+    }, factor.value);
 }
