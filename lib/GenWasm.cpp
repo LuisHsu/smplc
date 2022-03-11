@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstddef>
 #include <variant>
+#include <numeric>
 
 template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;
@@ -25,6 +26,7 @@ static std::ostream& operator<<(std::ostream&, Wasm::Limit&);
 static std::ostream& operator<<(std::ostream&, Wasm::GlobalType&);
 static std::ostream& operator<<(std::ostream&, Wasm::Ref::Type&);
 static std::ostream& operator<<(std::ostream&, Wasm::Global&);
+static std::ostream& operator<<(std::ostream&, Wasm::Func&);
 
 void GenWasm::wrapper(std::string filePrefix){
     // Write js wrapper
@@ -117,13 +119,16 @@ static std::ostream& operator<<(std::ostream& out, std::byte value){
 
 template<uint8_t N, class T, class A>
 static std::ostream& writeSection(std::ostream& out, std::vector<T, A>& instances){
-    Section section;
-    std::ostream stream(&section);
-    writeInt(stream, (uint16_t)instances.size());
-    for(T& instance: instances){
-        stream << instance;
+    if(instances.size() > 0){
+        Section section;
+        std::ostream stream(&section);
+        writeInt(stream, (uint16_t)instances.size());
+        for(T& instance: instances){
+            stream << instance;
+        }
+        return out << std::byte(N) << section;
     }
-    return out << std::byte(N) << section;
+    return out;
 }
 
 template<class T, class A>
@@ -150,14 +155,14 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Module& module){
     out.write("\00asm" "\x01\x00\x00\x00", 8);
     writeSection<0x01>(out, module.types); // Type
     writeSection<0x02>(out, module.imports); // Import
-    // funcSection(out, module.funcs); // Func
+    funcSection(out, module.funcs); // Func
     writeSection<0x04>(out, module.tables); // Table
     writeSection<0x05>(out, module.mems); // Memory
     // writeSection<0x06>(out, module.globals); // Global
     // TODO: Export section
     // TODO: Start section
     // TODO: Elem section
-    // TODO: Code section
+    writeSection<0x0A>(out, module.funcs); // Code
     // TODO: Data section
     // TODO: Data count section
     // return
@@ -235,4 +240,36 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Ref::Type& type){
 static std::ostream& operator<<(std::ostream& out, Wasm::Global& global){
     // TODO:
     return out;
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::Func& func){
+    Section code;
+    std::ostream stream(&code);
+    // Locals
+    std::vector<std::pair<Wasm::ValueType, uint32_t>> localPair;
+    localPair.emplace_back(std::reduce(func.locals.begin(), func.locals.end(),
+        std::pair<Wasm::ValueType, uint32_t> {func.locals.front(), 0}, 
+        [&](std::pair<Wasm::ValueType, uint32_t> acc, Wasm::ValueType& local) -> std::pair<Wasm::ValueType, uint32_t>{
+            if(local == acc.first){
+                return std::pair<Wasm::ValueType, uint32_t> {local, acc.second + 1};
+            }else{
+                localPair.emplace_back(acc);
+                return std::pair<Wasm::ValueType, uint32_t> {local, 1};
+            }
+        }
+    ));
+    writeInt(stream, (uint32_t)localPair.size());
+    for(std::pair<Wasm::ValueType, uint32_t>& local: localPair){
+        writeInt(stream, local.second);
+        stream << local.first;
+    }
+    // Instructions
+    for(Wasm::Instr& instr: func.body){
+        std::visit(overload {
+            [&](Wasm::Instr_end& instr){
+                stream << std::byte(0x0B);
+            },
+        }, instr);
+    }
+    return out << code;
 }

@@ -42,3 +42,7 @@ void EmitWasmPass::afterParse(Parser::VarDecl& decl){
         }
     }
 }
+
+void EmitWasmPass::afterParse(Parser::StatSequence&){
+    funcStack.top().func.body.emplace_back(Wasm::Instr_end());
+}

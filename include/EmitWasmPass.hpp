@@ -15,6 +15,7 @@ protected:
     void beforeParse(Parser::Computation&);
     void afterParse(Parser::Computation&);
     void afterParse(Parser::VarDecl&);
+    void afterParse(Parser::StatSequence&);
 
     struct FuncEntry{
         const uint32_t id;
