@@ -266,12 +266,20 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Func& func){
     // Instructions
     for(Wasm::Instr& instr: func.body){
         std::visit(overload {
-            [&](Wasm::Instr_end& instr){
-                stream << std::byte(0x0B);
-            },
             [&](Wasm::Instr_i32_const& instr){
-                stream << std::byte(0x41);
+                stream << std::byte(instr.opcode);
                 writeInt(stream, instr.value);
+            },
+            [&](Wasm::Instr_local_get& instr){
+                stream << std::byte(instr.opcode);
+                writeInt(stream, instr.index);
+            },
+            [&](Wasm::Instr_local_set& instr){
+                stream << std::byte(instr.opcode);
+                writeInt(stream, instr.index);
+            },
+            [&](auto& instr){
+                stream << std::byte(instr.opcode);
             },
         }, instr);
     }

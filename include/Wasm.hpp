@@ -285,7 +285,7 @@ using Instr_table_fill = UnaryInstr<0xFC11>;
 
 using Instr = std::variant<
     // Instr_unreachable,
-    // Instr_nop,
+    Instr_nop,
     // Instr_block,
     // Instr_loop,
     // Instr_if,
@@ -300,8 +300,8 @@ using Instr = std::variant<
     // Instr_drop,
     // Instr_select,
     // Instr_select_t,
-    // Instr_local_get,
-    // Instr_local_set,
+    Instr_local_get,
+    Instr_local_set,
     // Instr_local_tee,
     // Instr_global_get,
     // Instr_global_set,
@@ -332,7 +332,7 @@ using Instr = std::variant<
     // Instr_i64_store32,
     // Instr_memory_size,
     // Instr_memory_grow,
-    Instr_i32_const
+    Instr_i32_const,
     // Instr_i64_const,
     // Instr_f32_const,
     // Instr_f64_const,
@@ -373,10 +373,10 @@ using Instr = std::variant<
     // Instr_i32_clz,
     // Instr_i32_ctz,
     // Instr_i32_popcnt,
-    // Instr_i32_add,
-    // Instr_i32_sub,
-    // Instr_i32_mul,
-    // Instr_i32_div_s,
+    Instr_i32_add,
+    Instr_i32_sub,
+    Instr_i32_mul,
+    Instr_i32_div_s
     // Instr_i32_div_u,
     // Instr_i32_rem_s,
     // Instr_i32_rem_u,
