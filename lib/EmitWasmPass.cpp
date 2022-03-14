@@ -22,47 +22,46 @@ void EmitWasmPass::beforeParse(Parser::Computation&){
     module.imports.emplace_back(Wasm::Import {.module = "stdio", .name = "OutputNewLine", .desc = 0U});
     /* Memory */
     module.mems.emplace_back(1U, std::nullopt);
-    /* Main function */
-    funcStack.emplace();
 }
 
 void EmitWasmPass::afterParse(Parser::Computation& computation){
     if(computation.isSuccess){
         // Func main
-        FuncEntry& entry = funcStack.top();
-        module.funcs.emplace_back(entry.func);
+        for(Wasm::Instr& instr: seqStack.top()){
+            curFunc.func.body.emplace_back(instr);
+        }
+        curFunc.func.type = 0;
+        curFunc.func.body.emplace_back(Wasm::Instr_end());
+        module.funcs.emplace_back(curFunc.func);
         // Export main
-        module.exports.emplace_back(Wasm::Export {.name = "main", .descType = Wasm::DescType::Func, .descIdx = entry.id});
-        funcStack.pop();
+        module.exports.emplace_back(Wasm::Export {.name = "main", .descType = Wasm::DescType::Func, .descIdx = curFunc.id});
+        seqStack.pop();
     }
 }
 
 void EmitWasmPass::afterParse(Parser::VarDecl& decl){
     if(decl.isSuccess){
         for(Parser::Ident& ident: decl.identifiers){
-            FuncEntry& entry = funcStack.top();
-            if(entry.identMap.contains(ident.value)){
+            if(curFunc.identMap.contains(ident.value)){
                 Logger::put(LogLevel::Error, std::string("identifier '" + ident.value + "' has been defined"));
             }else{
-                entry.identMap.emplace(ident.value, entry.identMap.size());
-                entry.func.locals.emplace_back(Wasm::ValueType::i32);
+                curFunc.identMap.emplace(ident.value, curFunc.identMap.size());
+                curFunc.func.locals.emplace_back(Wasm::ValueType::i32);
             }
         }
     }
 }
 
-void EmitWasmPass::afterParse(Parser::StatSequence& statSeq){
-    if(statSeq.isSuccess){
-        funcStack.top().func.body.emplace_back(Wasm::Instr_end());
-    }
+void EmitWasmPass::beforeParse(Parser::StatSequence& statSeq){
+    seqStack.emplace();
 }
 
 void EmitWasmPass::afterParse(Parser::Factor& factor){
     if(factor.isSuccess){
         std::visit(overload {
             [&](Parser::Designator& designator){
-                if(funcStack.top().identMap.contains(designator.identifier.value)){
-                    instrStack.top().emplace(Wasm::Instr_local_get {.index = funcStack.top().identMap[designator.identifier.value]});
+                if(curFunc.identMap.contains(designator.identifier.value)){
+                    instrStack.top().emplace(Wasm::Instr_local_get {.index = curFunc.identMap[designator.identifier.value]});
                 }else{
                     Logger::put(LogLevel::Error, std::string("undefined identifier '" + designator.identifier.value + "'"));
                 }
@@ -151,12 +150,12 @@ void EmitWasmPass::afterParse(Parser::Assignment& assignment){
         std::queue<Wasm::Instr>& instrs = instrStack.top();
         instrs.pop();
         while(instrs.size() > 1){
-            funcStack.top().func.body.emplace_back(instrs.front());
+            seqStack.top().emplace_back(instrs.front());
             instrs.pop();
         }
         instrStack.pop();
-        if(funcStack.top().identMap.contains(assignment.designator.identifier.value)){
-            funcStack.top().func.body.emplace_back(Wasm::Instr_local_set {.index = funcStack.top().identMap[assignment.designator.identifier.value]});
+        if(curFunc.identMap.contains(assignment.designator.identifier.value)){
+            seqStack.top().emplace_back(Wasm::Instr_local_set {.index = curFunc.identMap[assignment.designator.identifier.value]});
         }else{
             Logger::put(LogLevel::Error, std::string("undefined identifier '" + assignment.designator.identifier.value + "'"));
         }
@@ -175,4 +174,74 @@ void EmitWasmPass::beforeParse(Parser::Term&){
 
 void EmitWasmPass::beforeParse(Parser::Assignment&){
     instrStack.emplace();
+}
+
+void EmitWasmPass::beforeParse(Parser::Relation&){
+    instrStack.emplace();
+}
+void EmitWasmPass::afterParse(Parser::Relation& relation){
+    if(relation.isSuccess){
+        std::queue<Wasm::Instr> instrs;
+        instrStack.top().swap(instrs);
+        instrStack.pop();
+        while(!instrs.empty()){
+            if(!(std::holds_alternative<Wasm::Instr_nop>(instrs.front()) || std::holds_alternative<Wasm::Instr_end>(instrs.front()))){
+                instrStack.top().emplace(instrs.front());
+            }
+            instrs.pop();
+        }
+        switch (relation.opType){
+        case Parser::RelOp::Type::Equal:
+            instrStack.top().emplace(Wasm::Instr_i32_eq());
+            break;
+        case Parser::RelOp::Type::NonEqual:
+            instrStack.top().emplace(Wasm::Instr_i32_ne());
+            break;
+        case Parser::RelOp::Type::GreaterThan:
+            instrStack.top().emplace(Wasm::Instr_i32_gt_s());
+            break;
+        case Parser::RelOp::Type::GreaterEqual:
+            instrStack.top().emplace(Wasm::Instr_i32_ge_s());
+            break;
+        case Parser::RelOp::Type::LessThan:
+            instrStack.top().emplace(Wasm::Instr_i32_lt_s());
+            break;
+        case Parser::RelOp::Type::LessEqual:
+            instrStack.top().emplace(Wasm::Instr_i32_le_s());
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void EmitWasmPass::afterParse(Parser::IfStatement& ifStatement){
+    if(ifStatement.isSuccess){
+        std::optional<std::vector<Wasm::Instr>> elseSeq;
+        if(ifStatement.elseStat.has_value()){
+            seqStack.top().swap(elseSeq.emplace());
+            seqStack.pop();
+        }
+        std::vector<Wasm::Instr> thenSeq;
+        seqStack.top().swap(thenSeq);
+        seqStack.pop();
+        std::queue<Wasm::Instr> relInstrs;
+        instrStack.top().swap(relInstrs);
+        instrStack.pop();
+        while(!relInstrs.empty()){
+            seqStack.top().emplace_back(relInstrs.front());
+            relInstrs.pop();
+        }
+        seqStack.top().emplace_back(Wasm::Instr_if());
+        for(Wasm::Instr& instr: thenSeq){
+            seqStack.top().emplace_back(instr);
+        }
+        if(elseSeq.has_value()){
+            seqStack.top().emplace_back(Wasm::Instr_else());
+            for(Wasm::Instr& instr: elseSeq.value()){
+                seqStack.top().emplace_back(instr);
+            }
+        }
+        seqStack.top().emplace_back(Wasm::Instr_end());
+    }
 }

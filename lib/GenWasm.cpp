@@ -270,6 +270,20 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Func& func){
                 stream << std::byte(instr.opcode);
                 writeInt(stream, instr.value);
             },
+            [&](Wasm::Instr_if& instr){
+                stream << std::byte(instr.opcode);
+                std::visit(overload{
+                    [&](std::monostate&){
+                        stream << std::byte(0x40);
+                    },
+                    [&](uint32_t& index){
+                        writeInt(stream, index);
+                    },
+                    [&](Wasm::ValueType& type){
+                        stream << type;
+                    }
+                }, instr.blocktype);
+            },
             [&](Wasm::Instr_local_get& instr){
                 stream << std::byte(instr.opcode);
                 writeInt(stream, instr.index);

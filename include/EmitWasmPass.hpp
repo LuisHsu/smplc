@@ -17,7 +17,7 @@ protected:
     void beforeParse(Parser::Computation&);
     void afterParse(Parser::Computation&);
     void afterParse(Parser::VarDecl&);
-    void afterParse(Parser::StatSequence&);
+    void beforeParse(Parser::StatSequence&);
     void afterParse(Parser::Factor&);
     void beforeParse(Parser::Term&);
     void afterParse(Parser::Term&);
@@ -25,6 +25,9 @@ protected:
     void afterParse(Parser::Expression&);
     void beforeParse(Parser::Assignment&);
     void afterParse(Parser::Assignment&);
+    void afterParse(Parser::IfStatement&);
+    void beforeParse(Parser::Relation&);
+    void afterParse(Parser::Relation&);
 
     struct FuncEntry{
         const uint32_t id;
@@ -34,7 +37,8 @@ protected:
     private:
         static uint32_t serial;
     };
-    std::stack<FuncEntry> funcStack;
+    FuncEntry curFunc;
+    std::stack<std::vector<Wasm::Instr>> seqStack;
     std::stack<std::queue<Wasm::Instr>> instrStack;
 };
 
