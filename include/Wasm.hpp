@@ -287,7 +287,7 @@ using Instr = std::variant<
     // Instr_unreachable,
     Instr_nop,
     // Instr_block,
-    // Instr_loop,
+    Instr_loop,
     Instr_if,
     Instr_else,
     Instr_end,

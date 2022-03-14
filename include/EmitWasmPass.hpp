@@ -26,6 +26,7 @@ protected:
     void beforeParse(Parser::Assignment&);
     void afterParse(Parser::Assignment&);
     void afterParse(Parser::IfStatement&);
+    void afterParse(Parser::WhileStatement&);
     void beforeParse(Parser::Relation&);
     void afterParse(Parser::Relation&);
 

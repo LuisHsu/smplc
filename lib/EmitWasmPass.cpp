@@ -159,6 +159,10 @@ void EmitWasmPass::afterParse(Parser::Assignment& assignment){
         }else{
             Logger::put(LogLevel::Error, std::string("undefined identifier '" + assignment.designator.identifier.value + "'"));
         }
+    }else{
+        if(!instrStack.empty()){
+            instrStack.pop();
+        }
     }
 }
 
@@ -184,6 +188,7 @@ void EmitWasmPass::afterParse(Parser::Relation& relation){
         std::queue<Wasm::Instr> instrs;
         instrStack.top().swap(instrs);
         instrStack.pop();
+        instrStack.emplace();
         while(!instrs.empty()){
             if(!(std::holds_alternative<Wasm::Instr_nop>(instrs.front()) || std::holds_alternative<Wasm::Instr_end>(instrs.front()))){
                 instrStack.top().emplace(instrs.front());
@@ -241,6 +246,26 @@ void EmitWasmPass::afterParse(Parser::IfStatement& ifStatement){
             for(Wasm::Instr& instr: elseSeq.value()){
                 seqStack.top().emplace_back(instr);
             }
+        }
+        seqStack.top().emplace_back(Wasm::Instr_end());
+    }
+}
+
+void EmitWasmPass::afterParse(Parser::WhileStatement& whileStatement){
+    if(whileStatement.isSuccess){
+        std::vector<Wasm::Instr> doSeq;
+        seqStack.top().swap(doSeq);
+        seqStack.pop();
+        std::queue<Wasm::Instr> relInstrs;
+        instrStack.top().swap(relInstrs);
+        instrStack.pop();
+        while(!relInstrs.empty()){
+            seqStack.top().emplace_back(relInstrs.front());
+            relInstrs.pop();
+        }
+        seqStack.top().emplace_back(Wasm::Instr_loop());
+        for(Wasm::Instr& instr: doSeq){
+            seqStack.top().emplace_back(instr);
         }
         seqStack.top().emplace_back(Wasm::Instr_end());
     }

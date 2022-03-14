@@ -83,7 +83,12 @@ static std::ostream& writeInt(std::ostream& out, uint32_t value){
             byte |= std::byte{0x80};
             bytes.emplace_back(byte | (std::byte)0x80);
         }else{
-            bytes.emplace_back(byte);
+            if(i < 4){
+                bytes.emplace_back(byte | (std::byte)0x80);
+                bytes.emplace_back((std::byte)0x00);
+            }else{
+                bytes.emplace_back(byte);
+            }
             break;
         }
     }
@@ -271,6 +276,20 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Func& func){
                 writeInt(stream, instr.value);
             },
             [&](Wasm::Instr_if& instr){
+                stream << std::byte(instr.opcode);
+                std::visit(overload{
+                    [&](std::monostate&){
+                        stream << std::byte(0x40);
+                    },
+                    [&](uint32_t& index){
+                        writeInt(stream, index);
+                    },
+                    [&](Wasm::ValueType& type){
+                        stream << type;
+                    }
+                }, instr.blocktype);
+            },
+            [&](Wasm::Instr_loop& instr){
                 stream << std::byte(instr.opcode);
                 std::visit(overload{
                     [&](std::monostate&){
