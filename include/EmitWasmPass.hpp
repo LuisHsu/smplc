@@ -32,7 +32,7 @@ protected:
 
     struct FuncEntry{
         const uint32_t id;
-        std::unordered_map<std::string, uint32_t> identMap;
+        std::unordered_map<std::string, std::variant<uint32_t, std::vector<uint32_t>>> identMap;
         Wasm::Func func;
         FuncEntry();
     private:

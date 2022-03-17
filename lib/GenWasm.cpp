@@ -27,6 +27,7 @@ static std::ostream& operator<<(std::ostream&, Wasm::GlobalType&);
 static std::ostream& operator<<(std::ostream&, Wasm::Ref::Type&);
 static std::ostream& operator<<(std::ostream&, Wasm::Global&);
 static std::ostream& operator<<(std::ostream&, Wasm::Func&);
+static std::ostream& operator<<(std::ostream&, Wasm::ConstExpr&);
 
 void GenWasm::wrapper(std::string filePrefix){
     // Write js wrapper
@@ -83,7 +84,7 @@ static std::ostream& writeInt(std::ostream& out, uint32_t value){
             byte |= std::byte{0x80};
             bytes.emplace_back(byte | (std::byte)0x80);
         }else{
-            if(i < 4){
+            if((i < 4) && (byte > (std::byte)0x40)){
                 bytes.emplace_back(byte | (std::byte)0x80);
                 bytes.emplace_back((std::byte)0x00);
             }else{
@@ -163,7 +164,7 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Module& module){
     funcSection(out, module.funcs); // Func
     writeSection<0x04>(out, module.tables); // Table
     writeSection<0x05>(out, module.mems); // Memory
-    // writeSection<0x06>(out, module.globals); // Global
+    writeSection<0x06>(out, module.globals); // Global
     // TODO: Export section
     // TODO: Start section
     // TODO: Elem section
@@ -243,7 +244,35 @@ static std::ostream& operator<<(std::ostream& out, Wasm::Ref::Type& type){
 }
 
 static std::ostream& operator<<(std::ostream& out, Wasm::Global& global){
-    // TODO:
+    return out << (Wasm::GlobalType&)global << global.init;
+}
+
+static std::ostream& operator<<(std::ostream& out, Wasm::ConstExpr& expr){
+    std::visit(overload{
+        [&](int32_t& value){
+            out << std::byte(Wasm::Instr_i32_const::opcode);
+            writeInt(out, value);
+        },
+        [&](int64_t& value){
+            out << std::byte(Wasm::Instr_i64_const::opcode);
+            writeInt(out, value);
+        },
+        [&](float32_t value){
+            out << std::byte(Wasm::Instr_f32_const::opcode);
+            std::byte* data = (std::byte*)&value;
+            for(int i = 0; i < 4; ++i){
+                out << data[i];
+            }
+        },
+        [&](float64_t value){
+            out << std::byte(Wasm::Instr_f64_const::opcode);
+            std::byte* data = (std::byte*)&value;
+            for(int i = 0; i < 8; ++i){
+                out << data[i];
+            }
+        }
+    }, expr.value);
+    out << std::byte(Wasm::Instr_end::opcode);
     return out;
 }
 

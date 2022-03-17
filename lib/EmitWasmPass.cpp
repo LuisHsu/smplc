@@ -20,6 +20,10 @@ void EmitWasmPass::beforeParse(Parser::Computation&){
     module.imports.emplace_back(Wasm::Import {.module = "stdio", .name = "OutputNum", .desc = 1U});
     module.imports.emplace_back(Wasm::Import {.module = "stdio", .name = "InputNum", .desc = 0U});
     module.imports.emplace_back(Wasm::Import {.module = "stdio", .name = "OutputNewLine", .desc = 0U});
+    // Global
+    Wasm::Global& sp = module.globals.emplace_back(Wasm::Global {.init = {.type = Wasm::ConstExpr::Type::Value, .value = (int32_t)0}});
+    sp.mut = true;
+    sp.valueType = Wasm::ValueType::i32;
     /* Memory */
     module.mems.emplace_back(1U, std::nullopt);
 }
@@ -45,7 +49,7 @@ void EmitWasmPass::afterParse(Parser::VarDecl& decl){
             if(curFunc.identMap.contains(ident.value)){
                 Logger::put(LogLevel::Error, std::string("identifier '" + ident.value + "' has been defined"));
             }else{
-                curFunc.identMap.emplace(ident.value, curFunc.identMap.size());
+                curFunc.identMap.emplace(ident.value, (uint32_t)curFunc.identMap.size());
                 curFunc.func.locals.emplace_back(Wasm::ValueType::i32);
             }
         }
@@ -61,7 +65,14 @@ void EmitWasmPass::afterParse(Parser::Factor& factor){
         std::visit(overload {
             [&](Parser::Designator& designator){
                 if(curFunc.identMap.contains(designator.identifier.value)){
-                    instrStack.top().emplace(Wasm::Instr_local_get {.index = curFunc.identMap[designator.identifier.value]});
+                    std::visit(overload{
+                        [&](uint32_t& varIndex){
+                            instrStack.top().emplace(Wasm::Instr_local_get {.index = varIndex});
+                        },
+                        [&](std::vector<uint32_t>& arrSize){
+                            // TODO:
+                        }
+                    }, curFunc.identMap[designator.identifier.value]);
                 }else{
                     Logger::put(LogLevel::Error, std::string("undefined identifier '" + designator.identifier.value + "'"));
                 }
@@ -155,7 +166,13 @@ void EmitWasmPass::afterParse(Parser::Assignment& assignment){
         }
         instrStack.pop();
         if(curFunc.identMap.contains(assignment.designator.identifier.value)){
-            seqStack.top().emplace_back(Wasm::Instr_local_set {.index = curFunc.identMap[assignment.designator.identifier.value]});
+            std::visit(overload{
+                [&](uint32_t& valIndex){
+                    seqStack.top().emplace_back(Wasm::Instr_local_set {.index = valIndex});
+                },
+                [&](std::vector<uint32_t>& arraySize){
+                }
+            }, curFunc.identMap[assignment.designator.identifier.value]);
         }else{
             Logger::put(LogLevel::Error, std::string("undefined identifier '" + assignment.designator.identifier.value + "'"));
         }
